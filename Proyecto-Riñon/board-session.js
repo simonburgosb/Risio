@@ -1,9 +1,10 @@
 import {auth, database, withTimeout} from './firebase-client.js';
 import {ref, get, set, update, remove, push, onValue, query, limitToLast, runTransaction, onDisconnect, serverTimestamp} from './vendor/firebase-sdk.js';
 import {BOARD_MODELS, MIN_MODEL_SIZE, MAX_MODEL_SIZE, MODEL_SIZE_STEP, boardModelSize} from './board-model-catalog.js';
+import {BOARD_BOOK, BASE_PAGE_WIDTH, PAGE_SLOTS, pagePlacement} from './board-book-catalog.js';
 import {SLOT_KEYS, rgb, defaultBoardMinutes, validBoardDuration, boardExpired, boardLimit, activePeople} from './board-utils.js';
 
-const emptyRoom = () => ({participants:{}, strokes:{}, messages:{}, permissions:{}, hands:{}, live:{}, texts:{}, highlights:{}, models:{}});
+const emptyRoom = () => ({participants:{}, strokes:{}, messages:{}, permissions:{}, hands:{}, live:{}, texts:{}, highlights:{}, models:{}, pages:{}});
 
 export class BoardSession {
   constructor(profile, changed) {
@@ -124,7 +125,7 @@ export class BoardSession {
     listen(query(ref(database,this.path('messages')), limitToLast(100)), value => this.state.messages = value);
     listen(ref(database,this.path('permissions')), value => this.state.permissions = value);
     listen(ref(database,this.path('hands')), value => this.state.hands = value);
-    for(const key of ['live','texts','highlights','models'])listen(ref(database,this.path(key)),value=>this.state[key]=value);
+    for(const key of ['live','texts','highlights','models','pages'])listen(ref(database,this.path(key)),value=>this.state[key]=value);
     this.liveRef=ref(database,this.path(`live/${this.uid}`));
     onDisconnect(this.liveRef).remove().catch(()=>{});
   }
@@ -135,28 +136,68 @@ export class BoardSession {
     try { return await withTimeout(operation); }
     finally { this.pending.delete(operation); this.notify(); }
   }
-  stroke(points, color, width, tool='pen') {
+  stroke(points, color, width, tool='pen', pageId) {
     if (!this.canDraw) throw new Error('Necesitas permiso para anotar.');
-    return this.save(()=>set(push(ref(database,this.path('strokes'))), {authorUid:this.uid, pointsJson:JSON.stringify(points), ...rgb(color), width, tool, createdAt:serverTimestamp()}));
+    return this.save(()=>set(push(ref(database,this.path('strokes'))), {authorUid:this.uid, pointsJson:JSON.stringify(points), ...rgb(color), width, tool, ...(pageId ? {pageId} : {}), createdAt:serverTimestamp()}));
   }
-  async liveStroke(points,color,width,tool='pen') {
+  async liveStroke(points,color,width,tool='pen',pageId) {
     if(!this.canDraw)return;
-    if(this.liveBusy){this.liveQueued={points:[...points],color,width,tool};return;}
+    if(this.liveBusy){this.liveQueued={points:[...points],color,width,tool,pageId};return;}
     this.liveBusy=true;
-    try {await withTimeout(set(this.liveRef,{authorUid:this.uid,pointsJson:JSON.stringify(points),...rgb(color),width,tool,createdAt:serverTimestamp()}), 'No se pudo sincronizar el trazo en vivo.', 8000);}
-    finally {this.liveBusy=false;const queued=this.liveQueued;this.liveQueued=null;if(queued)await this.liveStroke(queued.points,queued.color,queued.width,queued.tool);}
+    try {await withTimeout(set(this.liveRef,{authorUid:this.uid,pointsJson:JSON.stringify(points),...rgb(color),width,tool,...(pageId?{pageId}:{}),createdAt:serverTimestamp()}), 'No se pudo sincronizar el trazo en vivo.', 8000);}
+    finally {this.liveBusy=false;const queued=this.liveQueued;this.liveQueued=null;if(queued)await this.liveStroke(queued.points,queued.color,queued.width,queued.tool,queued.pageId);}
   }
   async finishLive() {this.liveQueued=null;while(this.liveBusy)await new Promise(r=>setTimeout(r,20));if(this.liveRef && this.online)await remove(this.liveRef);}
   async text(value,id) {
     if(!this.canDraw)throw new Error('Necesitas permiso para anotar.');
     const target=id?ref(database,this.path(`texts/${id}`)):push(ref(database,this.path('texts')));
-    return this.save(()=>set(target,{authorUid:this.uid,text:value.text,x:value.x,y:value.y,fontSize:value.fontSize,...rgb(value.color),updatedAt:serverTimestamp()}));
+    return this.save(()=>set(target,{authorUid:this.uid,text:value.text,x:value.x,y:value.y,fontSize:value.fontSize,...rgb(value.color),...(value.pageId?{pageId:value.pageId}:{}),updatedAt:serverTimestamp()}));
   }
   highlightText(id,color) {
     if(!this.canDraw)throw new Error('Necesitas permiso para anotar.');
     const value=this.state.highlights[id]?.[this.uid]?null:rgb(color);
     return this.save(()=>set(ref(database,this.path(`highlights/${id}/${this.uid}`)),value));
   }
+  async addBookPage(pageNumber) {
+    if (!this.canDraw) throw new Error('Necesitas permiso para agregar páginas.');
+    if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > BOARD_BOOK.pages) throw new Error('Selecciona una página válida.');
+    const id = push(ref(database)).key;
+    return this.save(async () => {
+      // Reserve one fixed slot so concurrent additions never rewrite other pages.
+      for (const [index, slot] of PAGE_SLOTS.entries()) {
+        const result = await runTransaction(ref(database, this.path('pages/' + slot)), current => {
+          if (current) return;
+          return {id, bookId: BOARD_BOOK.id, pageNumber,
+            ...pagePlacement(BASE_PAGE_WIDTH, .07 + index * .12, .04 + index * .02),
+            authorUid: this.uid, createdAt: serverTimestamp()};
+        }, {applyLocally: false});
+        if (result.committed) return id;
+      }
+      throw new Error('Este piloto permite hasta cuatro páginas por tablero.');
+    });
+  }
+
+  async changeBookPage(slot, id, transform) {
+    if (!this.canDraw) throw new Error('Necesitas permiso para modificar páginas.');
+    if (!PAGE_SLOTS.includes(slot)) throw new Error('Página desconocida.');
+    const target = ref(database, this.path('pages/' + slot));
+    const result = await this.save(() => runTransaction(target, current => {
+      if (!current || current.id !== id) return;
+      return transform(current);
+    }, {applyLocally: false}));
+    if (!result.committed) throw new Error('La página ya se retiró del tablero.');
+  }
+  moveBookPage(slot, id, dx, dy) {
+    if (![dx, dy].every(Number.isFinite)) throw new Error('Movimiento inválido.');
+    return this.changeBookPage(slot, id, page => ({...page,
+      ...pagePlacement(page.width, page.x + dx, page.y + dy)}));
+  }
+  resizeBookPage(slot, id, factor) {
+    if (!Number.isFinite(factor) || factor <= 0) throw new Error('Tamaño inválido.');
+    return this.changeBookPage(slot, id, page => ({...page,
+      ...pagePlacement(page.width * factor, page.x, page.y)}));
+  }
+  removeBookPage(slot, id) { return this.changeBookPage(slot, id, () => null); }
   shareModel(id, shared) {
     if (!this.canShareModels) throw new Error('Necesitas estar conectado al grupo o participar como profesor en la clase para compartir modelos.');
     if (!Object.hasOwn(BOARD_MODELS, id)) throw new Error('Selecciona un modelo de Risio.');
@@ -199,7 +240,7 @@ export class BoardSession {
     } finally {this.cleaning=false;}
   }
   undo() {
-    const last = Object.entries(this.state.strokes).reverse().find(([,s]) => s.authorUid === this.uid);
+    const last = Object.entries(this.state.strokes).reverse().find(([,s]) => s.authorUid === this.uid && (!s.pageId || Object.values(this.state.pages).some(page=>page.id===s.pageId)));
     return last ? this.save(()=>remove(ref(database,this.path(`strokes/${last[0]}`)))) : Promise.resolve();
   }
   clear() { if (!this.owner) throw new Error('Solo quien creó el tablero puede vaciarlo.'); return this.save(()=>Promise.all(['strokes','texts','highlights','live'].map(key=>remove(ref(database,this.path(key)))))); }

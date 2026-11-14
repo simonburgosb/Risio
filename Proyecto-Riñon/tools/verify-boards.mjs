@@ -83,6 +83,31 @@ try {
   await assertFails(user('teacher', false).ref(`${classModels}/nephron-85`).set(true));
   await assertSucceeds(db.teacher.ref(`${classModels}/kidney-cut`).remove());
 
+  // Embedded book pages: read-only participants see them; drawing permission governs edits.
+  const pageValue=(uid,id='page-a',pageNumber=12)=>({id,bookId:'renal-physiology-v1',pageNumber,x:.08,y:.04,width:.28,authorUid:uid,createdAt:Date.now()-100});
+  const classPages='boardData/UPB/class/pages';
+  await assertSucceeds(db.teacher.ref(classPages+'/p0').set(pageValue('teacher')));
+  assert.equal((await db.student2.ref(classPages+'/p0/pageNumber').get()).val(),12);
+  await assertFails(db.student2.ref(classPages+'/p0/x').set(.3));
+  await assertFails(db.student2.ref(classPages+'/p0').remove());
+  await assertFails(db.other.ref(classPages).get());
+  await assertSucceeds(db.student1.ref(classPages+'/p0').update({x:.2,width:.35}));
+  for(const value of [0,110,1.5,'12'])await assertFails(db.teacher.ref(classPages+'/p1').set(pageValue('teacher','bad',value)));
+  await assertFails(db.teacher.ref(classPages+'/p4').set(pageValue('teacher','extra')));
+  await assertFails(db.teacher.ref(classPages+'/p1').set({...pageValue('teacher'),bookId:'external-pdf'}));
+  await assertFails(db.teacher.ref(classPages+'/p1').set({...pageValue('student1')}));
+  await assertFails(db.teacher.ref(classPages+'/p1').set({...pageValue('teacher'),image:'data:image/png;base64,abc'}));
+  for(const patch of [{width:.5},{x:.9},{y:.9},{id:'changed'},{pageNumber:20},{authorUid:'student1'},{createdAt:1}])await assertFails(db.teacher.ref(classPages+'/p0').update(patch));
+  await assertSucceeds(db.student1.ref('boardData/UPB/class/strokes/on-page').set({...stroke('student1'),pageId:'page-a'}));
+  await assertSucceeds(db.student1.ref('boardData/UPB/class/live/student1').set({...stroke('student1'),pageId:'page-a'}));
+  await assertSucceeds(db.student1.ref('boardData/UPB/class/live/student1').remove());
+  const pageText={authorUid:'student1',text:'Apunte sobre el PDF',x:.1,y:.15,fontSize:24,red:130,green:20,blue:35,updatedAt:Date.now()-10,pageId:'page-a'};
+  await assertSucceeds(db.student1.ref('boardData/UPB/class/texts/on-page').set(pageText));
+  await assertFails(db.student1.ref('boardData/UPB/class/strokes/wrong-page').set({...stroke('student1'),pageId:'other-room-page'}));
+  await assertFails(db.student1.ref('boardData/UPB/class/texts/wrong-page').set({...pageText,pageId:'other-room-page'}));
+  await assertSucceeds(db.student1.ref(classPages+'/p0').remove());
+  await assertFails(db.student1.ref('boardData/UPB/class/strokes/removed-page').set({...stroke('student1'),pageId:'page-a'}));
+
   // The student who created the board and other connected participants can manage models.
   await assertSucceeds(db.student1.ref('boardDirectory/UPB/model-group').set(directory('student1')));
   const modelGroup = uid => db[uid].ref('boardData/UPB/model-group');
@@ -265,6 +290,18 @@ try {
   assert.match(duplicate.error,/otra pestaña/);await duplicate.leave();
   assert.equal((await db.student2.ref('boardData/UPB/'+classMeta.id+'/participants/student2').get()).exists(),true,'Duplicate tab must not remove original participant');
   await assertFails(db.student2.ref('boardData/UPB/'+classMeta.id+'/classSlots/'+studentClient.classSeat.target.key).remove());
+  const pageBase='boardData/UPB/'+classMeta.id+'/pages';
+  await assert.rejects(()=>studentClient.addBookPage(4),/permiso/);
+  const teacherPage=await teacherClient.addBookPage(8);
+  for(let i=0;i<80 && studentClient.state.pages.p0?.id!==teacherPage;i++)await new Promise(r=>setTimeout(r,25));
+  assert.equal(studentClient.state.pages.p0?.id,teacherPage);
+  await teacherClient.permission('student2',true);
+  for(let i=0;i<80 && !studentClient.canDraw;i++)await new Promise(r=>setTimeout(r,25));
+  await studentClient.moveBookPage('p0',teacherPage,.1,.1);
+  assert.ok((await db.teacher.ref(pageBase+'/p0/x').get()).val()>.1);
+  await teacherClient.permission('student2');
+  for(let i=0;i<80 && studentClient.canDraw;i++)await new Promise(r=>setTimeout(r,25));
+  await assert.rejects(()=>studentClient.resizeBookPage('p0',teacherPage,1.2),/permiso/);
   await studentClient.leave();await teacherClient.leave();
   await env.withSecurityRulesDisabled(async ctx=>{assert.equal((await ctx.database().ref('boardData/UPB/'+classMeta.id+'/classSlots').get()).exists(),false);});
   await teacherClient.deleteBoard(classMeta);
@@ -279,6 +316,24 @@ try {
   await studentClient.shareModel('kidney-full', false);
   await studentClient.resizeModel('kidney-full', 1);
   assert.equal((await modelRef.get()).exists(), false);
+  const groupPages=db.student2.ref('boardData/UPB/'+groupMeta.id+'/pages');
+  const pageAttempts=await Promise.allSettled(Array.from({length:6},(_,i)=>studentClient.addBookPage(i+1)));
+  assert.equal(pageAttempts.filter(x=>x.status==='fulfilled').length,4,'Concurrent adds respect four fixed slots');
+  let currentPages=(await groupPages.get()).val();assert.equal(Object.keys(currentPages).length,4);
+  const first=currentPages.p0;
+  await studentClient.stroke([[.02,.1],[.1,.11]],'#8c2626',4,'pen',first.id);
+  await studentClient.text({text:'Vinculado',x:.02,y:.12,fontSize:24,color:'#8c2626',pageId:first.id});
+  await studentClient.moveBookPage('p0',first.id,10,10);
+  await studentClient.resizeBookPage('p0',first.id,10);
+  currentPages=(await groupPages.get()).val();
+  assert.equal(currentPages.p0.width,.45);assert.ok(currentPages.p0.y<.07);
+  await studentClient.removeBookPage('p0',first.id);
+  const replacement=await studentClient.addBookPage(109);assert.notEqual(replacement,first.id);
+  await assert.rejects(()=>studentClient.moveBookPage('p0',first.id,.1,.1),/retiró/);
+  assert.equal((await groupPages.child('p0/id').get()).val(),replacement,'Stale drag cannot modify replacement');
+  await studentClient.leave();await studentClient.join(groupMeta);await ready(studentClient);
+  for(let i=0;i<80 && !studentClient.state.pages.p0;i++)await new Promise(r=>setTimeout(r,25));
+  assert.equal(studentClient.state.pages.p0.id,replacement,'Pages survive leaving and rejoining');
   await studentClient.leave();
   let departedSlots;
   await env.withSecurityRulesDisabled(async ctx=>{
@@ -301,5 +356,5 @@ try {
   }
   assert.ok(leftAt>0,'Last disconnect stores server departure timestamp');
   // Only this request's emulated records were used.
-  console.log('OK: creación directa profesor/estudiante, aislamiento universitario, cinco cupos en carrera, liberación, persistencia, clase con 50 participantes y rechazo del 51, chat, mano, permisos, revocación, caducidad de clase a una hora y de grupo tras dos minutos vacío, borrado por propietario y limpieza atómica de vencidos sin Functions.');
+  console.log('OK: creación directa profesor/estudiante, aislamiento universitario, cinco cupos en carrera, liberación, persistencia, clase con 50 participantes y rechazo del 51, chat, mano, permisos, revocación, caducidad de clase a una hora y de grupo tras dos minutos vacío, borrado por propietario limpieza atómica de vencidos sin Functions y páginas del libro con permisos, anotaciones vinculadas, límite concurrente y reingreso.');
 } finally { await env.cleanup(); }

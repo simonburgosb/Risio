@@ -72,15 +72,17 @@ const layout = section('function updateModuleLayout(', 'function switchModule(')
 // switchModule contains a tabBtns.forEach call, so take its external binding boundary.
 const switchCode = main.slice(main.indexOf('function switchModule('), main.indexOf("tabBtns.forEach((btn) => btn.addEventListener"));
 const home = section('function showHome(', "document.querySelector('#btn-home').addEventListener");
-const ctx = { document: doc, viewerGestures:{abortInput(){}}, drawingMode: false, currentStroke: null, drawingPointerId: null, currentActiveTab: '1', anatomyKind: 'kidney', isCutViewActive: false,
+const ctx = { document: doc, viewerGestures:{abortInput(){}}, drawingMode: false, currentStroke: null, drawingPointerId: null, currentActiveTab: '1', selectedFiltration: '3', anatomyKind: 'kidney', isCutViewActive: false,
   annotationCanvas: nodes.get('#annotation-canvas'), drawingControls: nodes.get('#drawing-controls'), drawButton: nodes.get('#btn-draw'),
   glucoseDrawButton: nodes.get('#btn-glucose-draw'), controls: { enabled: true }, previousToolButton: tools[0], activeToolId: 'btn-select',
   kidneyModel: kidney, glomerulusAnatomy: null, nephronAnatomy: null, nephron85Anatomy: null,
   anatomyBrowser: browser, infoPanel: nodes.get('#info-panel'), tabBtns: ['1', '2', '3'].map(tab => new Element({ tab })),
   glucoseModule: { ready: true, root: new THREE.Group(), setActive(value) { this.active = value; } },
   filtrationModule: { simulation: {}, root: new THREE.Group(), setActive(value) { this.active = value; } },
+  waterModule: { simulation: {}, root: new THREE.Group(), setActive(value) { this.active = value; } },
+  solutesModule: { simulation: {}, root: new THREE.Group(), setActive(value) { this.active = value; } },
   formulaCarousel: { setActive(value) { this.active = value; } },
-  formulasManager: { switchFormulaModule(id) { this.active = id; } }, strokes: [], notes: { '1': [], '2': [], '3': [] },
+  formulasManager: { switchFormulaModule(id) { this.active = id; } }, strokes: [], notes: { '1': [], '2': [], '3': [], '4': [], '5': [] },
   getAnnotationLayer() { return ctx.notes[ctx.currentActiveTab]; }, restoreIsolation() {}, updateCutOnlyTools() {},
   redrawAnnotations() {}, focusCameraOn() {}, getActiveModel: () => kidney };
 const ui = new Function('context', `with(context){${drawing}\n${cutCode}\n${layout}\n${switchCode}\n${home}\n
@@ -103,7 +105,20 @@ assert.equal(nodes.get('#glucose-controls-panel').hidden, true); assert.equal(no
 assert.equal(nodes.get('#filtration-controls-panel').hidden, false);
 assert.equal(ctx.formulaCarousel.active, true);
 assert.equal(ctx.notes['2'].length, 1, 'Switching modules preserves the annotations.');
+ui.switchModule('4');
+assert.equal(ctx.waterModule.active, true);
+assert.equal(ctx.filtrationModule.active, false);
+assert.equal(nodes.get('#water-controls-panel').hidden, false);
+assert.equal(nodes.get('#filtration-controls-panel').hidden, true);
+assert.equal(ctx.notes['2'].length, 1);
+ui.switchModule('5');
+assert.equal(ctx.solutesModule.active, true);
+assert.equal(ctx.waterModule.active, false);
+assert.equal(nodes.get('#solutes-controls-panel').hidden, false);
+assert.equal(nodes.get('#water-controls-panel').hidden, true);
 ui.switchModule('2'); assert.equal(ctx.notes['2'].length, 1);
+assert.equal(ctx.solutesModule.active, false);
+assert.equal(ctx.waterModule.active, false);
 ui.showHome(); assert.equal(doc.body.classList.contains('glucose-screen-active'), false);
 assert.equal(nodes.get('#glucose-controls-panel').hidden, true); assert.equal(nodes.get('#glucose-note-tool').hidden, true);
 assert.equal(nodes.get('#btn-glucose-draw').attributes['aria-expanded'], 'false');

@@ -6,13 +6,23 @@ El inicio presenta el logo original de Risio y una descripción de las tres áre
 
 **Nefrona 15% en Anatomía:** el modelo texturizado `NEFRONA_VIEJA.glb` reemplaza la nefrona anterior en el selector de Anatomía, como `Models/Nefrona_15.glb`. El título visible distingue Nefrona 15% de Nefrona 85%. Se conservan sus texturas y sus 31.116 triángulos; `COLOR_1` contiene las mismas regiones que `COLOR_0` de la referencia anterior. Se ofrecen ocho estructuras confirmadas, cada una con vista previa, descripción y función; las regiones sin identificar y la red vascular de identificación tentativa no aparecen en la lista ni se seleccionan con el ratón. La referencia sin textura permanece como fuente para las herramientas de geometría. Glucosa sigue utilizando Nefrona 85%.
 
+## Páginas de un libro dentro del tablero · piloto Spark
+
+En tableros de profesores y grupos de estudiantes, pulsa **Agregar página de libro**. Elige **Fisiología renal · Elsi Olaya Estefan**, indica una página del PDF (1–109), revisa la vista previa y pulsa **Agregar al tablero**. Este piloto admite hasta cuatro páginas simultáneas, incluidas páginas repetidas.
+
+Usa **Mover página** para arrastrar una hoja, el selector para elegirla y **− / +** para cambiar su tamaño. **Lápiz**, **Resaltador** y **Texto** funcionan sobre la página; sus anotaciones se desplazan y escalan con ella. Dos dedos amplían o recorren el tablero sin guardar trazos accidentales. Con ratón, la rueda desplaza y Ctrl/Cmd + rueda amplía. Las páginas conservan sus proporciones en tablets; el área de trabajo permite recorrer el contenido que quede fuera de la ventana. En ventanas de poca altura, desliza horizontalmente la barra para acceder a todos los colores y herramientas.
+
+Los participantes ven las mismas páginas, posiciones, tamaños y anotaciones. En las clases, el creador y quienes reciban permiso para anotar pueden agregarlas o modificarlas; en grupos, todos los participantes conectados. **Retirar página** la oculta junto con sus anotaciones vinculadas; estos trazos y textos se conservan internamente hasta vaciar o eliminar el tablero y no se reasignan a una hoja nueva. **Vaciar** conserva las páginas y borra las anotaciones. La descarga PNG incluye las páginas cargadas.
+
+**Antes de probar, publica las reglas actualizadas de `database.rules.json` en Realtime Database.** Conserva tu `.env.local`, inicia con `npm start` en local y vuelve a ejecutar `npm run build:web` para publicar `dist` en GitHub Pages con tu configuración web. El PDF y PDF.js están incluidos y se cargan mediante rutas relativas compatibles con subcarpetas de Pages. Firebase guarda referencias y anotaciones, sin subir capturas ni PDFs a Storage y sin Cloud Functions. El funcionamiento sigue sujeto a las cuotas gratuitas del proyecto. La selección y copia de texto del PDF quedan fuera de este piloto.
+
 ## Nuevo: cuentas y notas privadas
 
 Risio inicia con login, creación de cuenta, verificación de correo y recuperación de contraseña. UPB es la única universidad habilitada; el semestre aparece solo para estudiantes. Las anotaciones del visor y la Biblioteca se guardan por cuenta en Firebase, con una cola local por usuario para cambios pendientes. La guía **`INICIO_FIREBASE.md`** explica qué activar en consola, las reglas, las pruebas y los tableros compartidos.
 
 ## Nuevo: tableros de clases y grupos
 
-Abre **Tableros** en el inicio o junto a Mi cuenta. Profesores y estudiantes crean directamente con título y materia; hay listas y búsquedas separadas, filtros y orden por fecha o nombre. Solo aparecen tableros de tu universidad. Los grupos de estudiantes admiten cinco personas simultáneas, incluido el creador; las clases docentes no tienen un máximo fijado por la app. Incluye lápiz compartido, chat, participantes, mano levantada y permisos docentes. Los trazos permanecen guardados. **Publica de nuevo `database.rules.json`** para habilitar estas rutas; no requiere Storage para dibujo y chat. Los adjuntos todavía no están incluidos.
+Abre **Tableros** en el inicio o junto a Mi cuenta. Profesores y estudiantes crean directamente con título y materia; hay listas y búsquedas separadas, filtros y orden por fecha o nombre. Solo aparecen tableros de tu universidad. Los grupos de estudiantes admiten cinco personas simultáneas, incluido el creador; las clases docentes admiten hasta 50 personas, incluido el profesor. Incluye lápiz compartido, chat, participantes, mano levantada y permisos docentes. Los trazos permanecen guardados. **Publica de nuevo `database.rules.json`** para habilitar estas rutas; no requiere Storage para dibujo y chat. Las páginas del libro piloto se pueden insertar en el lienzo.
 
 ## Seguridad y nuevos tableros
 
@@ -389,3 +399,62 @@ Las pruebas `tools/verify-filtration-ui.mjs` y `tools/verify-formula-live.mjs` c
 ## Temas y tablets
 
 Modo claro original, modo oscuro persistente y gestos de anotación compartidos en visor, Biblioteca y tableros. Consulta `LEEME_TABLETS.md` para el uso, las pruebas y la actualización en GitHub Pages.
+
+
+## Filtración del agua
+
+Abre **Filtración** y selecciona **Glucosa**, **Agua** o **Solutos** en los botones sobre el visor. La selección se conserva al salir y volver durante la sesión. El glomérulo existente conserva su geometría y sus rutas vasculares. Las partículas azules representan porciones de agua que llegan por la aferente, pasan al espacio de Bowman o permanecen en el plasma y salen por la eferente. Las células sanguíneas permanecen en los vasos. La conexión entre capilares y espacio urinario es esquemática.
+
+La fuente principal es *Fisiología renal*, Elsi Olaya Estefan, edición PDF incluida en `assets/fisiologia-renal.pdf`. Las páginas se cuentan desde la primera hoja del PDF.
+
+| Cálculo | Relación usada | Página del PDF |
+| --- | --- | --- |
+| Presión neta de filtración | PNF = PGC − PBS − πGC, con π de Bowman ≈ 0 | 27 |
+| Tasa de filtración glomerular | TFG = Kf × max(0, PNF) | 28 |
+| Flujo plasmático renal | FPR = FSR × (1 − Hto/100) | 71, relación despejada |
+| Fracción de filtración | FF = TFG/FPR × 100 | 29 |
+| Volumen filtrado en 24 horas | TFG × 1440/1000, en L/día | 28, conversión de unidades |
+
+Los seis sliders cambian las presiones capilar, capsular y oncótica, Kf, flujo sanguíneo y hematocrito. El resultado inicial es PNF 10 mmHg, TFG 125 mL/min, FPR 625 mL/min, FF 20 % y 180 L/día. Las presiones son medias y se ajustan de manera independiente para estudiar su efecto. Los volúmenes representan ambos riñones y no el volumen real del glomérulo dibujado. Las partículas muestran proporciones y evolución del flujo, sin equivaler a moléculas contadas.
+
+Cuando PNF ≤ 0 o Kf = 0 se detiene la filtración. Si la TFG calculada supera el flujo plasmático disponible, se muestra la incompatibilidad y se detiene la animación hasta ajustar los parámetros. Pausar y Reiniciar flujo controlan la animación. Restablecer parámetros recupera el escenario inicial. Las anotaciones se guardan por cuenta en la capa independiente `viewer:water`, admitida por las reglas existentes.
+
+El volumen filtrado diario representa ultrafiltrado, compuesto por agua y solutos pequeños. La reabsorción posterior determina la orina final. El capítulo 3 (pp. 59–60) y el capítulo 5 (pp. 80–81) describen la reabsorción y el efecto de la HAD.
+
+| Modelo disponible | Aplicación al estudio del agua |
+| --- | --- |
+| Glomérulo | Filtración y salida hacia el proximal, implementadas en esta entrega |
+| Nefronas 15 % y 85 % | Estructuras útiles para una ampliación con reabsorción por segmentos, acuaporinas y colector |
+| Riñón completo y en corte | Escala macroscópica y relación entre corteza, médula y vía urinaria |
+
+Una ampliación con aminoácidos o solutos específicos puede aprovechar las mismas rutas de filtración. Requiere definir el soluto, su carga filtrada y su manejo tubular. El capítulo 3 distingue la reabsorción de aminoácidos del manejo de urea e iones.
+
+La implementación se contrastó también con Bowman, Lujan y DiCarlo, *Visualizing filtration*, Advances in Physiology Education (2024), DOI 10.1152/advan.00120.2024. Las pruebas de agua se ejecutan con `node Proyecto-Riñon/tools/verify-water.mjs` o dentro de `npm test`.
+
+Esta entrega se ejecuta con `npm start` y genera el sitio estático con `npm run build:web`. Conserva tu `.env.local` y publica el contenido de `dist/` para actualizar GitHub Pages.
+
+
+## Filtración de solutos
+
+Dentro de **Filtración**, selecciona **Solutos**. El selector incluye urea, creatinina, aminoácidos totales y un soluto X ajustable. Los ejemplos se basan en el libro *Fisiología renal* de Elsi Olaya Estefan, páginas 30, 50, 61 y 72 del PDF. Los valores iniciales son escenarios de estudio. Urea empieza en 30 mg/dL, creatinina en 1,2 mg/dL, aminoácidos totales en 2,5 mmol/L y soluto X en 50 mg/dL.
+
+La simulación reutiliza el glomérulo y las rutas medidas. Las partículas violetas muestran la proporción de la carga que cruza hacia Bowman y el proximal. Las restantes siguen por la eferente. Los resultados corresponden a ambos riñones, con el glomérulo como representación del proceso.
+
+Los parámetros de presión, Kf, flujo sanguíneo y hematocrito son independientes de Agua y Glucosa. La concentración plasmática y la filtrabilidad θ permiten estudiar la carga filtrada. θ es la relación entre las concentraciones en el filtrado y el plasma. En los ejemplos iniciales de solutos libres vale 1. Reducirlo representa una restricción hipotética al paso del soluto.
+
+| Cálculo | Relación |
+| --- | --- |
+| Presión neta | PNF = PGC − PBS − πGC, con π en Bowman ≈ 0 |
+| TFG | Kf × max(0, PNF) |
+| Flujo plasmático | FPR = FSR × (1 − Hto/100) |
+| Concentración filtrada | Cfiltrado = θ × PX |
+| Carga filtrada | TFG × Cfiltrado, ajustando unidades |
+| Fracción de carga filtrada | (TFG/FPR) × θ × 100 % |
+
+Para concentraciones en mg/dL se divide el producto de la TFG y la concentración entre 100. Para mmol/L se divide entre 1000. Con TFG de 125 mL/min, los valores iniciales dan 37,5 mg/min de urea, 1,5 mg/min de creatinina y 0,3125 mmol/min de aminoácidos. La carga que entra es FPR × PX, con el mismo ajuste de unidades. La que continúa por la eferente es la diferencia entre carga de entrada y carga filtrada.
+
+La vista representa la filtración hasta el proximal. La reabsorción, secreción y excreción final dependen del manejo tubular de cada sustancia. Las partículas son orientativas y su densidad se escala respecto al valor inicial de cada ejemplo. Las cantidades exactas aparecen en los resultados. Cambiar de soluto reinicia el flujo y recupera su concentración y filtrabilidad iniciales. Los controles de presión se conservan.
+
+Pausar y Reiniciar flujo controlan la animación. Restablecer parámetros recupera los valores iniciales para el soluto elegido. Las anotaciones de esta sección se guardan en la capa independiente por cuenta `viewer:solutes`.
+
+Las comprobaciones de cargas, unidades y rutas se ejecutan con `node Proyecto-Riñon/tools/verify-solutes.mjs` y dentro de `npm test`.

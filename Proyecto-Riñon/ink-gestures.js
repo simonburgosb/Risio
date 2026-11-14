@@ -2,8 +2,8 @@
 // A navigation gesture cancels its provisional stroke and stays locked until
 // every finger lifts. Stylus contact rejects palm/touch events while writing.
 export class InkGestures {
-  constructor(canvas,{viewport=canvas.parentElement,targets=()=>[canvas],enabled=()=>true,cancel=()=>{},changed=()=>{}}={}) {
-    Object.assign(this,{canvas,viewport,targets,enabled,cancel,changed});
+  constructor(canvas,{viewport=canvas.parentElement,targets=()=>[canvas],enabled=()=>true,cancel=()=>{},changed=()=>{},contentSize}={}) {
+    Object.assign(this,{canvas,viewport,targets,enabled,cancel,changed,contentSize});
     this.scrollHost=viewport.closest?.('.pdf-media');
     this.pointers=new Map();this.scale=1;this.x=0;this.y=0;
     viewport.classList.add('ink-viewport');canvas.style.touchAction='none';
@@ -53,7 +53,8 @@ export class InkGestures {
   }
   apply(){
     const w=this.viewport.clientWidth,h=this.viewport.clientHeight;
-    this.x=Math.min(0,Math.max(w*(1-this.scale),this.x));this.y=Math.min(0,Math.max(h*(1-this.scale),this.y));
+    const content=this.contentSize?.()||{width:w,height:h};
+    this.x=Math.min(0,Math.max(Math.min(0,w-content.width*this.scale),this.x));this.y=Math.min(0,Math.max(Math.min(0,h-content.height*this.scale),this.y));
     for(const target of this.targets())if(target){target.style.transformOrigin='0 0';target.style.transform=`translate(${this.x}px, ${this.y}px) scale(${this.scale})`;}
     this.resetButton.hidden=this.scale===1 && this.x===0 && this.y===0;this.resetButton.textContent=`Restablecer vista · ${Math.round(this.scale*100)}%`;this.changed();
   }

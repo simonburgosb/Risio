@@ -5,6 +5,8 @@ import {ref, onValue} from './vendor/firebase-sdk.js';
 import {hydrateIcons, iconMarkup} from './icons.js';
 import {BOARD_MODELS, MIN_MODEL_SIZE, MAX_MODEL_SIZE, boardModelSize} from './board-model-catalog.js';
 import {BoardSession} from './board-session.js';
+import {BoardBookPages} from './board-book-pages.js';
+import {BASE_PAGE_WIDTH} from './board-book-catalog.js';
 import {selectBoards, parseStroke, rgb, inkColor, isBlue, TEACHER_BLUE, CLASS_DURATION_MINUTES, STUDENT_DURATION_MINUTES, defaultBoardMinutes, boardLimit, boardLifetime, boardExpired, activePeople} from './board-utils.js';
 
 const $ = selector => document.querySelector(selector);
@@ -42,8 +44,18 @@ shell.innerHTML = `
         </div>
         <ul id="board-model-list"></ul>
       </section>
-      <div class="board-toolbar" role="toolbar" aria-label="Herramientas del tablero">
+      <section id="board-page-controls" class="board-page-controls" aria-label="Páginas del libro en el tablero" hidden>
+        <label><span>Página agregada</span><select id="board-page-selection" aria-label="Seleccionar página del tablero"></select></label>
+        <button id="board-page-smaller" class="board-button" type="button" aria-label="Reducir página">${icon('minus')}</button>
+        <button id="board-page-larger" class="board-button" type="button" aria-label="Ampliar página">${icon('plus')}</button>
+        <button id="board-page-remove" class="board-button" type="button">${icon('trash')} Retirar página</button>
+        <button id="board-page-retry" class="board-button" type="button" hidden>Reintentar carga</button>
+        <span id="board-page-status" role="status"></span>
+      </section>
+      <div class="board-toolbar" role="toolbar" aria-label="Herramientas del tablero" title="En ventanas de poca altura, desliza esta barra horizontalmente para ver todas las herramientas.">
         <div class="board-tool-switch"><button class="board-button" data-board-tool="pen" aria-pressed="true" type="button">${icon('pencil')} Lápiz</button><button class="board-button" data-board-tool="highlighter" aria-pressed="false" type="button">${icon('highlight')} Resaltador</button><button class="board-button" data-board-tool="text" aria-pressed="false" type="button">${icon('text')} Texto</button></div>
+        <button id="board-page-tool" class="board-button" data-board-tool="page" aria-pressed="false" type="button" hidden>${icon('hand')} Mover página</button>
+        <button id="board-add-page" class="board-button board-primary" type="button">${icon('plus')} Agregar página de libro</button>
         <div class="board-colors" aria-label="Colores">${[['#8c2626','Rojo oscuro'],['#302b28','Negro'],['#e57232','Naranja'],['#c99512','Amarillo'],['#23756a','Verde azulado'],['#3b8a39','Verde'],['#a23b72','Rosa'],['#285c9b','Azul']].map(([color,name],i)=>`<button type="button" data-board-color="${color}" aria-label="${name}" title="${name}" aria-pressed="${i===0}" style="--ink:${color}"></button>`).join('')}<label class="board-custom-color">Otro color<input id="board-color" type="color" value="#8c2626" aria-label="Elegir cualquier color"></label></div>
         <span id="board-color-help" class="board-color-help"></span>
         <label class="board-width">Grosor <input id="board-width" type="range" min="1" max="30" value="4" aria-label="Grosor de línea"><output id="board-width-value">4</output></label>
@@ -61,6 +73,14 @@ shell.innerHTML = `
       <div class="board-canvas-footer"><span id="board-draw-status"></span><button id="board-hand" class="board-button" type="button" aria-pressed="false" hidden>${icon('hand')} Levantar la mano</button></div>
     </div><aside class="board-sidebar" aria-label="Participantes y chat"><section class="board-people"><h2>${icon('users')} Participantes <span id="board-people-count">0</span></h2><label class="board-search">${icon('search')}<input id="board-people-search" type="search" placeholder="Buscar participante" aria-label="Buscar participante"></label><div id="board-people-list"></div></section><section class="board-chat"><h2>${icon('chat')} Chat del tablero</h2><div id="board-chat-list" class="board-chat-list" role="log" aria-label="Mensajes del tablero" aria-live="polite"></div><form id="board-chat-form"><label class="sr-board-only" for="board-chat-input">Mensaje</label><input id="board-chat-input" maxlength="1000" placeholder="Escribe un mensaje…" required autocomplete="off"><button class="board-button" type="submit" aria-label="Enviar mensaje">${icon('right')}</button></form></section></aside></div>
   </section>
+  <dialog id="board-book-dialog" class="board-dialog board-book-dialog" aria-labelledby="board-book-title"><form id="board-book-form">
+    <div class="board-dialog-heading"><span class="board-eyebrow">UN LIBRO EN TU TABLERO</span><button id="board-book-close" class="board-icon-button" type="button" aria-label="Cerrar">${icon('close')}</button></div>
+    <h2 id="board-book-title">Agregar página de libro</h2><p>Previsualiza una página y anota sobre ella con tu grupo. Hasta 4 páginas por tablero.</p>
+    <div class="board-book-fields"><label>Libro<select id="board-book-picker"><option value="renal-physiology-v1">Fisiología renal · Elsi Olaya Estefan</option></select></label><label>Página del PDF<input id="board-book-page" type="number" min="1" max="109" step="1" value="1" required></label></div>
+    <button id="board-book-refresh" class="board-button" type="button">Actualizar vista previa</button><p id="board-book-status" role="status" aria-live="polite"></p>
+    <div class="board-book-preview-wrap"><canvas id="board-book-preview" aria-label="Vista previa de la página elegida" hidden></canvas></div>
+    <p id="board-book-error" role="alert"></p><button id="board-book-submit" class="board-button board-primary" type="submit" disabled>${icon('plus')} Agregar al tablero</button>
+  </form></dialog>
   <dialog id="board-create-dialog" class="board-dialog"><form id="board-create-form"><div class="board-dialog-heading"><span class="board-eyebrow">UN NUEVO ESPACIO</span><button type="button" class="board-icon-button" id="board-create-close" aria-label="Cerrar">${icon('close')}</button></div><h2>Crear tablero</h2><p id="board-create-description"></p><label>Título del tablero<input id="board-create-title" name="title" required minlength="2" maxlength="100" placeholder="Ej. Nombre de la clase o de la materia"></label><label>Clase o materia<input name="course" required minlength="2" maxlength="100" placeholder="Ej. Fisiología renal · Grupo 01"></label><div class="board-duration">
       <div class="board-duration-heading"><label for="board-create-duration">Duración del tablero</label><output id="board-create-time" for="board-create-duration"></output></div>
       <div class="board-duration-control">
@@ -86,6 +106,8 @@ let modelKey = '', modelSaving = false;
 const cleanupStops=new Map();
 const occupancy = new Map(), counts = new Map(), countStops = new Map(), limits = {teacher:12, student:12};
 const canvas = $('#board-canvas'), ctx = canvas.getContext('2d');
+const bookPages = new BoardBookPages({getSession:()=>session, canvas, repaint, error:roomError, activate:()=>setModelInk(true),
+  selectTool:value=>shell.querySelector(`[data-board-tool="${value}"]`).click()});
 const boardError = error => /permission|denied/i.test(error.message || '') ? 'No pudimos acceder a los tableros. Publica las reglas actualizadas de database.rules.json en Firebase.' : error.message || 'No fue posible completar la acción. Inténtalo de nuevo.';
 function roomError(error = '') { const target = $('#board-room-error'); target.textContent = typeof error === 'string' ? error : boardError(error); target.hidden = !target.textContent; }
 async function perform(button, action) { if (button.disabled) return; button.disabled = true; try { await action(); } catch(error) { roomError(error); } finally { button.disabled = false; updateRoom(); } }
@@ -106,7 +128,7 @@ function subscribeDirectory() {
       },()=>{});
       cleanupStops.set(id,stop);
     }
-    if(session?.meta && !items.some(b=>b.id===session.meta.id)){session.removed=true;session.present=false;session.error='Este tablero se eliminó. Vuelve a la lista para continuar.';session.state={...session.state,strokes:{},texts:{},live:{},highlights:{},messages:{},models:{}};updateRoom();}
+    if(session?.meta && !items.some(b=>b.id===session.meta.id)){session.removed=true;session.present=false;session.error='Este tablero se eliminó. Vuelve a la lista para continuar.';session.state={...session.state,strokes:{},texts:{},live:{},highlights:{},messages:{},models:{},pages:{}};updateRoom();}
     loaded = true; directoryError = ''; renderCatalog();
     session.cleanExpired(items,occupancy);
   }, error => { directoryError = boardError(error); loaded = true; renderCatalog(); });
@@ -176,6 +198,7 @@ function showCreate() {
 }
 async function openRoom(meta) {
   document.body.classList.add('board-room-open');
+  bookPages.reset();
   setWideView(false);
   boardGestures.reset();
   setSharedModels(new Map());
@@ -189,32 +212,42 @@ async function openRoom(meta) {
   try { await session.join(meta); } finally { joining = false; }
   window.scrollTo(0,0); updateRoom();
 }
-function drawStroke(stroke) {
+function drawStroke(stroke) { bookPages.anchored(ctx,stroke,()=>paintStroke(stroke)); }
+function paintStroke(stroke) {
   const value = parseStroke(stroke); if (!value) return;
   ctx.globalAlpha=value.tool==='highlighter'?.25:1;
-  ctx.strokeStyle = readableInk(value.color); ctx.fillStyle = readableInk(value.color); ctx.lineWidth = value.width; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const ink=stroke.pageId?value.color:readableInk(value.color);
+  ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = value.width; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   const [first, ...points] = value.points;
   if (!points.length) { ctx.beginPath(); ctx.arc(first[0]*1600,first[1]*1000,value.width/2,0,Math.PI*2); ctx.fill(); return; }
   ctx.beginPath(); ctx.moveTo(first[0]*1600,first[1]*1000); for (const point of points) ctx.lineTo(point[0]*1600,point[1]*1000); ctx.stroke();
 }
-function drawText(id,value) {
+function drawText(id,value) { bookPages.anchored(ctx,value,()=>paintText(id,value)); }
+function paintText(id,value) {
   if(typeof value.text!=='string' || !Number.isFinite(value.x) || !Number.isFinite(value.y))return;
-  const size=Math.max(14,Math.min(60,value.fontSize||24)),x=value.x*1600,y=value.y*1000,maxWidth=Math.max(60,Math.min(520,1600-x-12));
+  const size=Math.max(14,Math.min(60,value.fontSize||24)),x=value.x*1600,y=value.y*1000,maxWidth=Math.max(60,Math.min(520,(value.pageId?BASE_PAGE_WIDTH*1600:1600)-x-12));
   ctx.font=`${size}px Arial`;ctx.textBaseline='top';ctx.globalAlpha=1;
   const lines=[];for(const line of value.text.split('\n')){let current='';for(const word of line.split(' ')){if(ctx.measureText(current+word).width>maxWidth && current){lines.push(current.trimEnd());current='';}current+=word+' ';}lines.push(current.trimEnd());}
   const height=lines.length*size*1.35, width=Math.min(maxWidth,Math.max(30,...lines.map(l=>ctx.measureText(l).width)));
   const highlights=Object.values(session.state.highlights[id]||{});
   if(highlights.length){ctx.fillStyle=inkColor(highlights.at(-1));ctx.globalAlpha=.25;lines.forEach((line,i)=>ctx.fillRect(x-3,y+i*size*1.35,Math.max(10,ctx.measureText(line).width)+6,size*1.2));ctx.globalAlpha=1;}
-  ctx.fillStyle=readableInk(inkColor(value));lines.forEach((line,i)=>ctx.fillText(line,x,y+i*size*1.35,maxWidth));
-  textBoxes.push({id,x:x/1600,y:y/1000,width:width/1600,height:height/1000});
+  ctx.fillStyle=value.pageId?inkColor(value):readableInk(inkColor(value));lines.forEach((line,i)=>ctx.fillText(line,x,y+i*size*1.35,maxWidth));
+  const origin=value.pageId?bookPages.board([value.x,value.y],value.pageId):[value.x,value.y];
+  const scale=value.pageId?bookPages.frame(value.pageId).width/BASE_PAGE_WIDTH:1;
+  textBoxes.push({id,pageId:value.pageId,x:origin[0],y:origin[1],width:width/1600*scale,height:height/1000*scale});
 }
 function repaint() {
   ctx.globalAlpha=1;ctx.clearRect(0,0,canvas.width,canvas.height);textBoxes=[];
   const strokes=Object.values(session?.state.strokes||{}),live=Object.entries(session?.state.live||{}).filter(([uid])=>uid!==session.uid).map(([,v])=>v);
-  for(const stroke of [...strokes,...live].filter(s=>s.tool!=='highlighter'))drawStroke(stroke);
-  for(const [id,value]of Object.entries(session?.state.texts||{}))drawText(id,value);
-  for(const stroke of [...strokes,...live].filter(s=>s.tool==='highlighter'))drawStroke(stroke);
-  if(gesture)drawStroke({...gesture,...rgb(gesture.color),pointsJson:JSON.stringify(gesture.points)});
+  const drawAnnotations=pageId=>{
+    const values=[...strokes,...live].filter(value=>(value.pageId||null)===pageId);
+    for(const stroke of values.filter(s=>s.tool!=='highlighter'))drawStroke(stroke);
+    for(const [id,value]of Object.entries(session?.state.texts||{}))if((value.pageId||null)===pageId)drawText(id,value);
+    for(const stroke of values.filter(s=>s.tool==='highlighter'))drawStroke(stroke);
+    if(gesture && (gesture.pageId||null)===pageId)drawStroke({...gesture,...rgb(gesture.color),pointsJson:JSON.stringify(gesture.points)});
+  };
+  for(const page of bookPages.pages){bookPages.draw(ctx,page.id);drawAnnotations(page.id);}
+  drawAnnotations(null);
   ctx.globalAlpha=1;
 }
 function chooseColor(next){
@@ -237,7 +270,8 @@ function updateBoardModels() {
   $('#board-models').hidden = !active || (!canManage && !shared.length);
   modelForm.hidden = !canManage;
   setSharedModels(active ? sizes : new Map());
-  modelInkButton.hidden = !session.canDraw || !sharedModels.size;
+  modelInkButton.hidden = (!session.canDraw && !bookPages.pages.length) || !sharedModels.size;
+  modelInkButton.innerHTML=iconMarkup('pencil')+(session.canDraw?' Anotar sobre 3D':' Navegar por páginas');
   if (modelInkButton.hidden) setModelInk(false);
 
   const key = JSON.stringify([shared, canManage, editable]);
@@ -371,7 +405,11 @@ $('#board-model-list').addEventListener('click', event => {
 function updateRoom() {
   if (!session?.meta) return;
   const {state} = session, online = session.online && session.present;
+  const hadPages=Boolean(bookPages.pages.length);
+  bookPages.sync(state.pages);
   updateBoardModels();
+  if(hadPages!==Boolean(bookPages.pages.length)){boardGestures.apply();if(bookPages.pages.length)setModelInk(true);}
+  if(tool==='page' && !bookPages.pages.length){tool='pen';for(const button of shell.querySelectorAll('[data-board-tool]'))button.setAttribute('aria-pressed',String(button.dataset.boardTool===tool));}
   if (!session.canDraw && gesture) { gesture = null; session.finishLive().catch(()=>{});repaint(); }
   $('#board-save-state').textContent = !session.online ? 'Sin conexión' : session.error ? 'No conectado al tablero' : !session.present ? 'Conectando…' : session.pending.size ? 'Guardando…' : 'Todo guardado';
   $('#board-save-state').dataset.state = online && !session.pending.size ? 'saved' : 'pending';
@@ -403,9 +441,10 @@ function updateRoom() {
   $('#board-hand').disabled = !online; $('#board-hand').setAttribute('aria-pressed',String(Boolean(state.hands[session.uid])));
   $('#board-hand').innerHTML = iconMarkup('hand') + (state.hands[session.uid] ? ' Bajar la mano' : ' Levantar la mano');
   $('#board-chat-input').disabled = !online; $('#board-chat-form button').disabled = !online;
-  const strokeState = JSON.stringify([state.strokes,state.live,state.texts,state.highlights]);
+  const strokeState = JSON.stringify([state.strokes,state.live,state.texts,state.highlights,state.pages]);
   if (strokeState !== previousStrokeState) { previousStrokeState = strokeState; repaint(); }
-  $('#board-blank').hidden = Boolean(sharedModels.size || Object.keys(state.strokes).length || Object.keys(state.texts).length || Object.keys(state.live).length || gesture || !$('#board-text-dialog').hidden);
+  const visibleAnnotation=value=>!value.pageId || Boolean(bookPages.frame(value.pageId));
+  $('#board-blank').hidden = Boolean(sharedModels.size || bookPages.pages.length || Object.values(state.strokes).some(visibleAnnotation) || Object.values(state.texts).some(visibleAnnotation) || Object.values(state.live).some(visibleAnnotation) || gesture || !$('#board-text-dialog').hidden);
   const peopleState = JSON.stringify([state.participants,state.permissions,state.hands,$('#board-people-search').value,session.online]);
   if (peopleState !== previousPeopleState) { previousPeopleState = peopleState; renderPeople(); }
   const chatState = JSON.stringify(state.messages);
@@ -427,7 +466,7 @@ function renderPeople() {
   }).join('') || '<p class="board-chat-empty">No hay participantes que coincidan.</p>';
   hydrateIcons($('#board-people-list'));
 }
-async function list() { document.body.classList.remove('board-room-open'); closeTextEditor(); await session.leave(); setSharedModels(new Map()); gesture = null; $('#board-room').hidden = true; $('#boards-catalog').hidden = false; renderCatalog(); $('#boards-title').focus(); }
+async function list() { document.body.classList.remove('board-room-open'); closeTextEditor(); await session.leave(); bookPages.reset(); setSharedModels(new Map()); gesture = null; $('#board-room').hidden = true; $('#boards-catalog').hidden = false; renderCatalog(); $('#boards-title').focus(); }
 async function open() {
   if (!profile || visible) return;
   $('#library-reader-close')?.click(); $('#btn-home').click();
@@ -439,7 +478,7 @@ async function open() {
 }
 async function close() {
   document.body.classList.remove('board-room-open');
-  closeTextEditor();await session.leave();setSharedModels(new Map()); for (const stop of countStops.values()) stop(); countStops.clear();
+  closeTextEditor();await session.leave();bookPages.reset();setSharedModels(new Map()); for (const stop of countStops.values()) stop(); countStops.clear();
   visible = false; document.body.classList.remove('boards-screen-open');
   $('#btn-home').click(); $('#btn-boards').focus();
 }
@@ -501,8 +540,10 @@ function positionTextEditor() {
   const editor=$('#board-text-dialog'), paper=canvas.closest('.board-paper-wrapper');
   const width=Math.min(360,paper.clientWidth-16),view=canvas.getBoundingClientRect(),base=paper.getBoundingClientRect();
   editor.style.width=width+'px';
-  editor.style.left=Math.max(8,Math.min(view.left-base.left+textTarget.x*view.width,paper.clientWidth-width-8))+'px';
-  editor.style.top=Math.max(8,Math.min(view.top-base.top+textTarget.y*view.height,Math.max(8,paper.clientHeight-300)))+'px';
+  const targetPoint=textTarget.pageId?bookPages.board([textTarget.x,textTarget.y],textTarget.pageId):[textTarget.x,textTarget.y];
+  if(!targetPoint){closeTextEditor();return;}
+  editor.style.left=Math.max(8,Math.min(view.left-base.left+targetPoint[0]*view.width,paper.clientWidth-width-8))+'px';
+  editor.style.top=Math.max(8,Math.min(view.top-base.top+targetPoint[1]*view.height,Math.max(8,paper.clientHeight-300)))+'px';
   $('#board-text-value').style.color=readableInk(textTarget.color);
 }
 function closeTextEditor() {
@@ -514,41 +555,59 @@ $('#board-text-value').addEventListener('keydown',event=>{
   if(event.key==='Escape'){event.preventDefault();closeTextEditor();}
   if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();$('#board-text-form').requestSubmit();}
 });
-function hitText(p){return [...textBoxes].reverse().find(b=>p[0]>=b.x && p[0]<=b.x+b.width && p[1]>=b.y && p[1]<=b.y+b.height);}
-function cancelBoardInk(){gesture=null;pendingTap=null;session?.finishLive().catch(()=>{});repaint();}
+function hitText(p){const topPage=bookPages.hit(p);return [...textBoxes].reverse().find(b=>(!b.pageId || b.pageId===topPage?.id) && p[0]>=b.x && p[0]<=b.x+b.width && p[1]>=b.y && p[1]<=b.y+b.height);}
+function cancelBoardInk(){bookPages.cancelDrag();gesture=null;pendingTap=null;session?.finishLive().catch(()=>{});repaint();}
 let pendingTap=null;
-const boardGestures=new InkGestures(canvas,{viewport:canvas.closest('.board-paper-wrapper'),targets:()=>[$('#board-sheet')],enabled:()=>visible && !$('#board-room').hidden,cancel:cancelBoardInk,changed:positionTextEditor});
+const boardGestures=new InkGestures(canvas,{viewport:canvas.closest('.board-paper-wrapper'),targets:()=>[$('#board-sheet')],enabled:()=>visible && !$('#board-room').hidden,cancel:cancelBoardInk,changed:positionTextEditor,contentSize:()=>bookPages.pages.length?{width:$('#board-sheet').offsetWidth,height:$('#board-sheet').offsetHeight}:null});
+// Mouse navigation complements the two-finger viewport on shorter windows.
+canvas.closest('.board-paper-wrapper').addEventListener('wheel',event=>{
+  if(!visible || !bookPages.pages.length || event.target.closest('.board-text-editor'))return;
+  if(gesture || bookPages.drag)boardGestures.abortInput();
+  event.preventDefault();
+  if(event.ctrlKey || event.metaKey){
+    const bounds=boardGestures.viewport.getBoundingClientRect(),old=boardGestures.scale;
+    boardGestures.scale=Math.max(1,Math.min(4,old*Math.exp(-event.deltaY*.002)));
+    const ratio=boardGestures.scale/old,x=event.clientX-bounds.left,y=event.clientY-bounds.top;
+    boardGestures.x=x-(x-boardGestures.x)*ratio;boardGestures.y=y-(y-boardGestures.y)*ratio;
+  }else{boardGestures.x-=event.shiftKey?event.deltaY:event.deltaX;boardGestures.y-=event.shiftKey?0:event.deltaY;}
+  boardGestures.apply();
+},{passive:false});
 window.addEventListener('risio-theme-change',()=>{if(session)repaint();positionTextEditor();});
 function startBoardInk(event,fromTap=false){
   if(!$('#board-text-dialog').hidden)return;
   if(!session?.canDraw || (event.pointerType==='mouse' && event.button!==0) || gesture)return;
   const p=point(event),hit=hitText(p);
+  if(tool==='page'){bookPages.startDrag(event,p);return;}
+  const page=bookPages.hit(p), local=page?bookPages.local(p,page.id):p;
   if(event.pointerType==='touch' && !fromTap && (tool==='text' || tool==='highlighter' && hit)){pendingTap=event;return;}
   if(tool==='text'){
     if(hit && session.state.texts[hit.id].authorUid!==session.uid){roomError('Solo el autor puede editar esta caja de texto.');return;}
-    textTarget=hit?{...session.state.texts[hit.id],id:hit.id,color:inkColor(session.state.texts[hit.id])}:{x:Math.min(.95,p[0]),y:Math.min(.95,p[1]),fontSize:24,color};
+    textTarget=hit?{...session.state.texts[hit.id],id:hit.id,color:inkColor(session.state.texts[hit.id])}:{x:Math.min(.95,local[0]),y:Math.min(.95,local[1]),fontSize:24,color,...(page?{pageId:page.id}:{})};
     $('#board-text-value').value=textTarget.text||'';$('#board-text-size').value=textTarget.fontSize;$('#board-text-error').hidden=true;positionTextEditor();$('#board-text-dialog').hidden=false;$('#board-blank').hidden=true;$('#board-text-value').focus();return;
   }
   if(tool==='highlighter' && hit){session.highlightText(hit.id,color).catch(roomError);return;}
   event.preventDefault();canvas.setPointerCapture(event.pointerId);
-  gesture={pointer:event.pointerId,points:[p],color,width:Number($('#board-width').value)*(tool==='highlighter'?4:1),tool};$('#board-blank').hidden=true;lastLiveAt=performance.now();
-  session.liveStroke(gesture.points,color,gesture.width,tool).catch(roomError);repaint();
+  gesture={pointer:event.pointerId,points:[local],...(page?{pageId:page.id}:{}),color,width:Number($('#board-width').value)*(tool==='highlighter'?4:1),tool};$('#board-blank').hidden=true;lastLiveAt=performance.now();
+  session.liveStroke(gesture.points,color,gesture.width,tool,gesture.pageId).catch(roomError);repaint();
 }
 canvas.addEventListener('pointerdown',event=>startBoardInk(event));
 canvas.addEventListener('pointermove',event=>{
+  if(bookPages.moveDrag(event,point(event)))return;
   if(!gesture || gesture.pointer!==event.pointerId)return;
-  const p=point(event),last=gesture.points.at(-1);
+  const p=gesture.pageId?bookPages.local(point(event),gesture.pageId):point(event),last=gesture.points.at(-1);
+  if(!p){cancelBoardInk();return;}
   if(Math.hypot(p[0]-last[0],p[1]-last[1])>.001 && gesture.points.length<2000){gesture.points.push(p);repaint();
-    if(performance.now()-lastLiveAt>80){lastLiveAt=performance.now();session.liveStroke([...gesture.points],gesture.color,gesture.width,gesture.tool).catch(roomError);}}
+    if(performance.now()-lastLiveAt>80){lastLiveAt=performance.now();session.liveStroke([...gesture.points],gesture.color,gesture.width,gesture.tool,gesture.pageId).catch(roomError);}}
 });
 canvas.addEventListener('pointerup',async event=>{
+  if(bookPages.endDrag(event))return;
   if(pendingTap?.pointerId===event.pointerId){const tap=pendingTap;pendingTap=null;startBoardInk(tap,true);return;}
   if(!gesture || gesture.pointer!==event.pointerId)return;const stroke=gesture;gesture=null;
-  try{await session.stroke(stroke.points,stroke.color,stroke.width,stroke.tool);}catch(error){roomError(error);}finally{await session.finishLive().catch(()=>{});}
+  try{await session.stroke(stroke.points,stroke.color,stroke.width,stroke.tool,stroke.pageId);}catch(error){roomError(error);}finally{await session.finishLive().catch(()=>{});}
   repaint();updateRoom();
 });
 canvas.addEventListener('pointercancel',cancelBoardInk);
-canvas.addEventListener('lostpointercapture',()=>{if(gesture)cancelBoardInk();});
+canvas.addEventListener('lostpointercapture',()=>{if(gesture || bookPages.drag)cancelBoardInk();});
 $('#board-color').addEventListener('input',event=>chooseColor(event.target.value));
 $('#board-width').addEventListener('input',event=>$('#board-width-value').value=event.target.value);
 $('#board-text-cancel').addEventListener('click',closeTextEditor);
@@ -568,6 +627,6 @@ $('#board-delete-confirm').addEventListener('click',async event=>{
 setInterval(()=>{if(visible){if(session.meta)updateRoom();else renderCatalog();}},1000);
 export const boards = {
   start(nextProfile) { if(profile) return; profile = nextProfile; session = new BoardSession(profile,updateRoom); subscribeDirectory(); },
-  async leave() { if(session) await session.leave(); setSharedModels(new Map()); directoryStop?.();directoryStop=null;for(const stop of cleanupStops.values())stop();cleanupStops.clear();for(const stop of countStops.values())stop();countStops.clear(); },
+  async leave() { if(session) await session.leave(); bookPages.reset(); setSharedModels(new Map()); directoryStop?.();directoryStop=null;for(const stop of cleanupStops.values())stop();cleanupStops.clear();for(const stop of countStops.values())stop();countStops.clear(); },
   open
 };

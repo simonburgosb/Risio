@@ -76,10 +76,11 @@ No se encontraron claves privadas de servidor, tokens GitHub ni cuentas de servi
 - `annotations/UID/RECURSO`: trazos privados de modelos, PDFs, imágenes y videos. Requiere cuenta con correo verificado. La cola local por UID conserva pendientes; espera al indicador de sincronización antes de salir.
 - `boardDirectory/UNIVERSIDAD/ID`: título, clase/materia, creador y fecha. Solo se lista desde cuentas verificadas de esa universidad.
 - `boardData/UNIVERSIDAD/ID`: participantes/cupos, trazos, vistas previas en vivo, textos, resaltados, mensajes, manos y permisos. El contenido requiere participar; las listas de presencia pueden verse desde el catálogo de la misma universidad.
+- `boardData/UNIVERSIDAD/ID/pages/p0..p3`: identificador de libro y página, posición, ancho, autor y fecha. Solo participantes con permiso de anotar pueden escribir. Los registros de trazos, textos y vistas en vivo pueden incluir `pageId` para acompañar a la hoja al moverla o ampliarla. El PDF no se almacena en la base.
 - `_lifecycle`: ruta heredada bloqueada; esta versión usa únicamente la fecha inmutable de `boardDirectory` para caducar.
 - `teacherApprovals`: ruta heredada reservada; no se exige aprobación para crear un tablero de profesor.
 
-En las clases, el profesor creador anota por defecto y concede o retira permiso a otros participantes. Los permisos concedidos se mantienen hasta retirarlos. Los grupos de estudiantes tienen cinco reservas simultáneas validadas con transacciones; cerrar o salir libera la reserva al registrarse la desconexión. El chat conserva los mensajes; se muestran los últimos 100. No se han añadido importaciones de imágenes, PDF o documentos al tablero en esta entrega.
+En las clases, el profesor creador anota por defecto y concede o retira permiso a otros participantes. Los permisos concedidos se mantienen hasta retirarlos. Los grupos de estudiantes tienen cinco reservas simultáneas validadas con transacciones; cerrar o salir libera la reserva al registrarse la desconexión. El chat conserva los mensajes; se muestran los últimos 100. El piloto de páginas del libro permite insertar páginas del PDF de Fisiología renal incluido, con un máximo de cuatro hojas activas por tablero.
 
 ## 5. Verificación
 
@@ -99,3 +100,12 @@ Las pruebas de Firebase necesitan Java 17 o posterior y `npm install`; usan solo
 - https://firebase.google.com/docs/functions/get-started
 - https://firebase.google.com/docs/functions/schedule-functions
 - https://firebase.google.com/docs/database/web/offline-capabilities
+
+## Activar el piloto de páginas de libro
+
+1. Publica de nuevo el contenido completo de `database.rules.json` en **Realtime Database → Reglas** de tu proyecto.
+2. Conserva tu `.env.local` al reemplazar el código. Para local, ejecuta `npm install` y `npm start`. Para GitHub Pages, reconstruye con `npm run build:web` y publica el contenido de `dist`, siguiendo el procedimiento anterior.
+3. Abre un tablero, pulsa **Agregar página de libro**, introduce una página del PDF (1–109), revisa la vista previa y agrégala. Todos los integrantes ven la misma hoja. No se requiere desplegar Functions ni utilizar Storage para esta función.
+4. Usa **Mover página** para arrastrar; el selector de hojas y **− / +** modifican la hoja seleccionada. Para escribir, vuelve a Lápiz, Resaltador o Texto. Las anotaciones quedan vinculadas a la página. Dos dedos permiten ampliar y recorrer el área de trabajo.
+
+El libro piloto es **Fisiología renal · Elsi Olaya Estefan**, incluido en `Proyecto-Riñon/assets/fisiologia-renal.pdf`. Se utiliza el número de página del archivo PDF, que puede diferir del impreso en la hoja. El límite es de cuatro hojas activas por tablero. Las reglas rechazan libros externos, páginas fuera del rango, cambios de autor o identificador y escrituras sin presencia o permiso. Las pruebas `test:boards` incluyen adiciones simultáneas, lectura por otros participantes, permisos de clase, anotaciones vinculadas y protección frente a movimientos de hojas ya retiradas.

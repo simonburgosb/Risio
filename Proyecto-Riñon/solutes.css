@@ -1,0 +1,20 @@
+.solutes-label { display: block; font-size: .8rem; font-weight: 700; margin-bottom: 7px; }
+#solutes-kind { width: 100%; min-height: 44px; padding: 8px; margin-bottom: 10px; border: 1px solid var(--border-d8cfc4); border-radius: 8px; background: var(--bg-f9f7f4); color: var(--text-2b2b2b); font: inherit; }
+.solutes-controls-panel .glomerulus-summary { flex-wrap: wrap; gap: 5px; margin: 12px 0; }
+.solutes-controls-panel .glomerulus-summary span { font-size: .73rem; }
+#solutes-pause { background: var(--home-resource-bg); color: var(--home-resource-text); }
+#solutes-pause .ui-icon { color: inherit; }
+.legend-solute { background: #b35fe8; }
+#solutes-legend { flex-wrap: wrap; }
+#formula-cards-solutes .formula-card { overflow-y: auto; justify-content: flex-start; gap: 8px; }
+#formula-cards-solutes .formula-result { gap: 8px; flex-wrap: wrap; }
+body.solutes-screen-active #solutes-loading { top: 72px; }
+body.solutes-screen-active #solutes-pause-notice { left: 16px; bottom: 16px; transform: none; }
+@media (max-width: 1180px), (pointer: coarse) {
+  .solutes-controls-panel .simulation-actions { flex-wrap: wrap; }
+  .solutes-controls-panel .simulation-actions button { min-height: 42px; }
+}
+@media (max-width: 900px) {
+  .filtration-substances { gap: 4px; }
+  .filtration-substances .tab-btn { min-width: 0; padding: 8px 10px; }
+}

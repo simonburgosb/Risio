@@ -42,8 +42,12 @@
               ".validate": "$question.matches(/^q[1-5]$/) && newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 3"
             }
           },
-          "submittedAt": { ".validate": "newData.isNumber() && newData.val() <= now" },
-          "$other": { ".validate": false }
+          "submittedAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     },
@@ -206,6 +210,9 @@
               },
               "$other": {
                 ".validate": false
+              },
+              "pageId": {
+                ".validate": "newData.isString() && newData.val().length <= 80 && (root.child('boardData').child($university).child($board).child('pages/p0/id').val() === newData.val() || root.child('boardData').child($university).child($board).child('pages/p1/id').val() === newData.val() || root.child('boardData').child($university).child($board).child('pages/p2/id').val() === newData.val() || root.child('boardData').child($university).child($board).child('pages/p3/id').val() === newData.val())"
               }
             }
           },
@@ -267,6 +274,9 @@
               },
               "$other": {
                 ".validate": false
+              },
+              "pageId": {
+                ".validate": "newData.isString() && newData.val().length <= 80 && (root.child('boardData').child($university).child($board).child('pages/p0/id').val() === newData.val() || root.child('boardData').child($university).child($board).child('pages/p1/id').val() === newData.val() || root.child('boardData').child($university).child($board).child('pages/p2/id').val() === newData.val() || root.child('boardData').child($university).child($board).child('pages/p3/id').val() === newData.val())"
               }
             },
             ".write": "auth != null && auth.token.email_verified === true && root.child('profiles').child(auth.uid).child('university').val() === $university && root.child('boardDirectory').child($university).child($board).exists() && !((root.child('boardDirectory').child($university).child($board).child('kind').val() === 'teacher' && now >= root.child('boardDirectory').child($university).child($board).child('createdAt').val() + (root.child('boardDirectory').child($university).child($board).child('durationMinutes').exists() ? root.child('boardDirectory').child($university).child($board).child('durationMinutes').val() * 60000 : 3600000)) || (root.child('boardDirectory').child($university).child($board).child('kind').val() === 'student' && now >= root.child('boardDirectory').child($university).child($board).child('createdAt').val() + (root.child('boardDirectory').child($university).child($board).child('durationMinutes').exists() ? root.child('boardDirectory').child($university).child($board).child('durationMinutes').val() * 60000 : 2700000)) || (root.child('boardDirectory').child($university).child($board).child('kind').val() === 'student' && now >= root.child('boardDirectory').child($university).child($board).child('createdAt').val() + 120000 && (!root.child('boardData').child($university).child($board).child('slots/s0').exists() || (root.child('boardData').child($university).child($board).child('slots/s0/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s0/leftAt').val() + 120000)) && (!root.child('boardData').child($university).child($board).child('slots/s1').exists() || (root.child('boardData').child($university).child($board).child('slots/s1/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s1/leftAt').val() + 120000)) && (!root.child('boardData').child($university).child($board).child('slots/s2').exists() || (root.child('boardData').child($university).child($board).child('slots/s2/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s2/leftAt').val() + 120000)) && (!root.child('boardData').child($university).child($board).child('slots/s3').exists() || (root.child('boardData').child($university).child($board).child('slots/s3/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s3/leftAt').val() + 120000)) && (!root.child('boardData').child($university).child($board).child('slots/s4').exists() || (root.child('boardData').child($university).child($board).child('slots/s4/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s4/leftAt').val() + 120000)))) && ((root.child('boardDirectory').child($university).child($board).child('kind').val() === 'teacher' && root.child('boardData').child($university).child($board).child('participants').child(auth.uid).exists()) || (root.child('boardDirectory').child($university).child($board).child('kind').val() === 'student' && ((root.child('boardData').child($university).child($board).child('slots/s0/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s0/leftAt').exists()) || (root.child('boardData').child($university).child($board).child('slots/s1/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s1/leftAt').exists()) || (root.child('boardData').child($university).child($board).child('slots/s2/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s2/leftAt').exists()) || (root.child('boardData').child($university).child($board).child('slots/s3/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s3/leftAt').exists()) || (root.child('boardData').child($university).child($board).child('slots/s4/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s4/leftAt').exists())))) && root.child('boardDirectory').child($university).child($board).child('ownerUid').val() === auth.uid && !newData.exists()"
@@ -305,6 +315,9 @@
               },
               "$other": {
                 ".validate": false
+              },
+              "pageId": {
+                ".validate": "newData.isString() && newData.val().length <= 80 && (root.child('boardData').child($university).child($board).child('pages/p0/id').val() === newData.val() || root.child('boardData').child($university).child($board).child('pages/p1/id').val() === newData.val() || root.child('boardData').child($university).child($board).child('pages/p2/id').val() === newData.val() || root.child('boardData').child($university).child($board).child('pages/p3/id').val() === newData.val())"
               }
             }
           },
@@ -352,6 +365,39 @@
               },
               "joinedAt": {
                 ".validate": "newData.isNumber() && newData.val() <= now && newData.val() >= now - 120000"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "pages": {
+            ".write": "(auth != null && auth.token.email_verified === true && root.child('profiles').child(auth.uid).child('university').val() === $university && root.child('boardDirectory').child($university).child($board).exists() && !((root.child('boardDirectory').child($university).child($board).child('kind').val() === 'teacher' && now >= root.child('boardDirectory').child($university).child($board).child('createdAt').val() + (root.child('boardDirectory').child($university).child($board).child('durationMinutes').exists() ? root.child('boardDirectory').child($university).child($board).child('durationMinutes').val() * 60000 : 3600000)) || (root.child('boardDirectory').child($university).child($board).child('kind').val() === 'student' && now >= root.child('boardDirectory').child($university).child($board).child('createdAt').val() + (root.child('boardDirectory').child($university).child($board).child('durationMinutes').exists() ? root.child('boardDirectory').child($university).child($board).child('durationMinutes').val() * 60000 : 2700000)) || (root.child('boardDirectory').child($university).child($board).child('kind').val() === 'student' && now >= root.child('boardDirectory').child($university).child($board).child('createdAt').val() + 120000 && (!root.child('boardData').child($university).child($board).child('slots/s0').exists() || (root.child('boardData').child($university).child($board).child('slots/s0/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s0/leftAt').val() + 120000)) && (!root.child('boardData').child($university).child($board).child('slots/s1').exists() || (root.child('boardData').child($university).child($board).child('slots/s1/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s1/leftAt').val() + 120000)) && (!root.child('boardData').child($university).child($board).child('slots/s2').exists() || (root.child('boardData').child($university).child($board).child('slots/s2/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s2/leftAt').val() + 120000)) && (!root.child('boardData').child($university).child($board).child('slots/s3').exists() || (root.child('boardData').child($university).child($board).child('slots/s3/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s3/leftAt').val() + 120000)) && (!root.child('boardData').child($university).child($board).child('slots/s4').exists() || (root.child('boardData').child($university).child($board).child('slots/s4/leftAt').isNumber() && now >= root.child('boardData').child($university).child($board).child('slots/s4/leftAt').val() + 120000)))) && ((root.child('boardDirectory').child($university).child($board).child('kind').val() === 'teacher' && root.child('boardData').child($university).child($board).child('participants').child(auth.uid).exists()) || (root.child('boardDirectory').child($university).child($board).child('kind').val() === 'student' && ((root.child('boardData').child($university).child($board).child('slots/s0/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s0/leftAt').exists()) || (root.child('boardData').child($university).child($board).child('slots/s1/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s1/leftAt').exists()) || (root.child('boardData').child($university).child($board).child('slots/s2/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s2/leftAt').exists()) || (root.child('boardData').child($university).child($board).child('slots/s3/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s3/leftAt').exists()) || (root.child('boardData').child($university).child($board).child('slots/s4/uid').val() === auth.uid && !root.child('boardData').child($university).child($board).child('slots/s4/leftAt').exists())))) && (root.child('boardDirectory').child($university).child($board).child('kind').val() === 'student' || root.child('boardDirectory').child($university).child($board).child('ownerUid').val() === auth.uid || root.child('boardData').child($university).child($board).child('permissions').child(auth.uid).val() === true))",
+            "$page": {
+              ".validate": "$page.matches(/^p[0-3]$/) && newData.hasChildren(['id','bookId','pageNumber','x','y','width','authorUid','createdAt']) && (!data.exists() || (newData.child('id').val() === data.child('id').val() && newData.child('pageNumber').val() === data.child('pageNumber').val() && newData.child('authorUid').val() === data.child('authorUid').val() && newData.child('createdAt').val() === data.child('createdAt').val())) && newData.child('x').val() + newData.child('width').val() <= 1.000001 && newData.child('y').val() + newData.child('width').val() * 2.070588235294118 <= 1.000001",
+              "id": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
+              },
+              "bookId": {
+                ".validate": "newData.val() === 'renal-physiology-v1'"
+              },
+              "pageNumber": {
+                ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 109"
+              },
+              "x": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+              },
+              "y": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+              },
+              "width": {
+                ".validate": "newData.isNumber() && newData.val() >= 0.12 && newData.val() <= 0.45"
+              },
+              "authorUid": {
+                ".validate": "newData.isString() && (!data.exists() ? newData.val() === auth.uid : newData.val() === data.val())"
+              },
+              "createdAt": {
+                ".validate": "newData.isNumber() && newData.val() <= now && (!data.exists() ? newData.val() >= now - 120000 : newData.val() === data.val())"
               },
               "$other": {
                 ".validate": false

@@ -1,0 +1,56 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import * as THREE from '../vendor/three.module.js';
+import {calculateWaterState} from '../water-physiology.js';
+import {GlomerulusSimulation} from '../glomerulus-simulation.js';
+
+const baseline = calculateWaterState();
+assert.equal(baseline.pnf, 10);
+assert.equal(baseline.tfg, 125);
+assert.equal(baseline.plasmaFlow, 625);
+assert.equal(baseline.fraction, .2);
+assert.equal(baseline.litersPerDay, 180);
+assert.equal(baseline.efferentPlasma + baseline.tfg, baseline.plasmaFlow);
+assert.equal(calculateWaterState({kf: 6.25}).tfg, 62.5);
+assert.equal(calculateWaterState({pgc: 70}).tfg, 250);
+assert.equal(calculateWaterState({pbs: 28}).tfg, 0);
+assert.equal(calculateWaterState({pigc: 42}).tfg, 0);
+assert.equal(calculateWaterState({kf: 0}).tfg, 0);
+assert.equal(calculateWaterState({pgc: 0}).tfg, 0);
+assert.equal(calculateWaterState({hematocrit: 60}).plasmaFlow, 500);
+assert.equal(calculateWaterState({bloodFlow: 1500}).plasmaFlow, 750);
+assert.equal(calculateWaterState({pgc: 80, pbs: 0, pigc: 0, kf: 20}).valid, false);
+assert.equal(calculateWaterState({bloodFlow: 0, kf: 0}).fraction, null);
+assert.throws(() => calculateWaterState({kf: NaN}));
+assert.throws(() => calculateWaterState({bloodFlow: -1}));
+assert.throws(() => calculateWaterState({hematocrit: 100}));
+
+const routes = JSON.parse(fs.readFileSync(new URL('../glomerulus-routes.json', import.meta.url)));
+function simulate(state, fps) {
+  const simulation = new GlomerulusSimulation(new THREE.Group(), routes);
+  simulation.setState(state);
+  for (let i = 0; i < 150 * fps; i++) simulation.update(1 / fps);
+  const {filtered, continued, filtrate, absorbed, returning, unfiltered, blood} = simulation.stats;
+  assert.equal(absorbed, 0);
+  assert.equal(returning, 0);
+  assert.equal(filtered, continued + filtrate);
+  assert.equal(simulation.serial, filtered + unfiltered + blood);
+  assert.ok(Math.abs(filtered / (filtered + unfiltered) - state.fraction) < .025);
+  return simulation;
+}
+const normal30 = simulate(baseline, 30);
+const normal60 = simulate(baseline, 60);
+assert.ok(Math.abs(normal30.stats.filtered - normal60.stats.filtered) <= 1);
+const reduced = simulate(calculateWaterState({kf: 6.25}), 60);
+assert.ok(reduced.stats.filtered < normal60.stats.filtered * .6);
+const frozen = normal60.particles.filter(p => p.stage === 'filtration' || p.stage === 'proximal');
+const positions = frozen.map(p => normal60.position(p).toArray());
+const beforeStop = normal60.stats.filtered;
+normal60.setState(calculateWaterState({pbs: 40}));
+for (let i = 0; i < 600; i++) normal60.update(1 / 60);
+assert.equal(normal60.stats.filtered, beforeStop);
+frozen.forEach((particle, index) => assert.deepEqual(normal60.position(particle).toArray(), positions[index]));
+normal60.reset();
+assert.equal(normal60.stats.active, 0);
+assert.equal(normal60.stats.filtered, 0);
+console.log('OK: agua, cinco ecuaciones y unidades, cambios de presión/Kf/flujo/hematocrito, balance plasmático, límites, rutas sin reabsorción, partículas conservadas, 30/60 FPS, cese y reinicio.');

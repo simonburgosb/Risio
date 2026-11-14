@@ -10,8 +10,11 @@
   <link rel="stylesheet" href="./assessments.css">
   <link rel="stylesheet" href="./auth.css">
   <link rel="stylesheet" href="./boards.css">
+  <link rel="stylesheet" href="./board-book-pages.css">
   <link rel="stylesheet" href="./theme.css">
   <link rel="stylesheet" href="./tablet.css">
+  <link rel="stylesheet" href="./water.css">
+  <link rel="stylesheet" href="./solutes.css">
   <script type="importmap">
     {
       "imports": {
@@ -104,7 +107,7 @@
             <span class="home-option-copy"><strong>Anatomía</strong><small>Explora el riñón y sus estructuras</small></span>
             <span class="home-option-arrow" aria-hidden="true" data-icon="external"></span>
           </button>
-          <button class="home-option" type="button" data-home-tab="3" data-formula-tab="filtration">
+          <button class="home-option" type="button" data-home-tab="3">
             <span class="home-option-icon" data-icon="filter" aria-hidden="true"></span>
             <span class="home-option-copy"><strong>Filtración</strong><small>Descubre cómo se filtra la sangre</small></span>
             <span class="home-option-arrow" aria-hidden="true" data-icon="external"></span>
@@ -546,7 +549,51 @@
                 <div class="simulation-actions"><button id="filtration-pause" type="button" class="icon-label-control"><span data-icon="pause" aria-hidden="true"></span> Pausar</button><button id="filtration-restart" type="button" class="icon-label-control"><span data-icon="restart" aria-hidden="true"></span> Reiniciar</button></div>
                 <p class="glomerulus-hint">La glucosa reabsorbida vuelve a la sangre por las ramificaciones de salida. La conexión desde el proximal es esquemática; el resto continúa por la nefrona. Los contadores representan partículas.</p>
               </section>
-              </aside><div class="canvas-container">
+              </aside>
+      <aside id="water-controls-panel" class="glucose-controls-panel filtration-controls-panel water-controls-panel" aria-labelledby="water-controls-title" hidden>
+        <header class="glucose-controls-header"><span>FILTRACIÓN DEL AGUA</span><h2 id="water-controls-title">Glomérulo</h2></header>
+        <section class="glomerulus-controls">
+          <h3 id="water-status">Filtración activa</h3>
+          <p id="water-status-detail" class="glomerulus-hint"></p>
+          <div class="glomerulus-summary"><span>Volumen filtrado</span><strong id="water-summary-tfg">125.0 mL/min</strong></div>
+          <div class="glomerulus-summary"><span>Plasma que sigue por la eferente</span><strong id="water-summary-efferent">500.0 mL/min</strong></div>
+          <label class="range-label" for="water-opacity">Opacidad del modelo <output id="water-opacity-value">20 %</output></label>
+          <input id="water-opacity" type="range" min="0.04" max="0.65" step="0.01" value="0.2">
+          <div class="simulation-actions">
+            <button id="water-pause" type="button" class="icon-label-control"><span data-icon="pause" aria-hidden="true"></span> Pausar</button>
+            <button id="water-restart" type="button" class="icon-label-control"><span data-icon="restart" aria-hidden="true"></span> Reiniciar flujo</button>
+          </div>
+          <p class="glomerulus-hint">El azul representa porciones de agua. Las células rojas permanecen en los vasos. La transición a Bowman es esquemática.</p>
+          <p class="glomerulus-hint">Los resultados corresponden a ambos riñones. El glomérulo representa el proceso a otra escala.</p>
+        </section>
+      </aside>
+      <aside id="solutes-controls-panel" class="glucose-controls-panel filtration-controls-panel solutes-controls-panel" aria-labelledby="solutes-controls-title" hidden>
+        <header class="glucose-controls-header"><span>FILTRACIÓN DE SOLUTOS</span><h2 id="solutes-controls-title">Glomérulo</h2></header>
+        <section class="glomerulus-controls">
+          <label for="solutes-kind" class="solutes-label">Soluto</label>
+          <select id="solutes-kind" aria-describedby="solutes-description"></select>
+          <p id="solutes-description" class="glomerulus-hint"></p>
+          <h3 id="solutes-status">Filtración de urea</h3>
+          <p id="solutes-status-detail" class="glomerulus-hint"></p>
+          <div class="glomerulus-summary"><span>Carga que llega al glomérulo</span><strong id="solutes-summary-incoming"></strong></div>
+          <div class="glomerulus-summary"><span>Carga filtrada</span><strong id="solutes-summary-filtered"></strong></div>
+          <div class="glomerulus-summary"><span>Carga que sigue por la eferente</span><strong id="solutes-summary-efferent"></strong></div>
+          <label class="range-label" for="solutes-opacity">Opacidad del modelo <output id="solutes-opacity-value">20 %</output></label>
+          <input id="solutes-opacity" type="range" min="0.04" max="0.65" step="0.01" value="0.2">
+          <div class="simulation-actions">
+            <button id="solutes-pause" type="button" class="icon-label-control"><span data-icon="pause" aria-hidden="true"></span> Pausar</button>
+            <button id="solutes-restart" type="button" class="icon-label-control"><span data-icon="restart" aria-hidden="true"></span> Reiniciar flujo</button>
+          </div>
+          <p class="glomerulus-hint">Las partículas violetas representan soluto. Su densidad indica cambios relativos dentro del ejemplo elegido. Las cantidades exactas se muestran en las fórmulas.</p>
+          <p class="glomerulus-hint">Esta vista llega al proximal. El manejo tubular posterior determina la cantidad que se elimina en la orina.</p>
+        </section>
+      </aside>
+<div class="canvas-container">
+        <nav id="filtration-substances" class="nav-tabs filtration-substances" role="group" aria-label="Sustancia de filtración" hidden>
+          <button class="tab-btn active" type="button" data-filtration-substance="3" aria-pressed="true">Glucosa</button>
+          <button class="tab-btn" type="button" data-filtration-substance="4" aria-pressed="false">Agua</button>
+          <button class="tab-btn" type="button" data-filtration-substance="5" aria-pressed="false">Solutos</button>
+        </nav>
         <div id="model-stage" class="model-stage"><canvas id="webgl-canvas"></canvas>
         <p id="anatomy-model-caption" class="anatomy-model-caption" aria-live="polite" hidden>Riñón</p>
         <div id="glucose-note-tool" class="viewer-note-tool" hidden>
@@ -587,6 +634,12 @@
           </div>
         </nav>
         <div id="glucose-loading" class="canvas-loading" role="status" hidden>Cargando recorrido de la glucosa…</div>
+        <div id="solutes-loading" class="canvas-loading" role="status" hidden>Cargando filtración de solutos…</div>
+        <div id="solutes-pause-notice" class="simulation-pause-notice" role="status" hidden>Simulación en pausa</div>
+        <div id="solutes-legend" class="filtration-legend" hidden><span><i class="legend-blood"></i>Sangre</span><span><i class="legend-solute"></i><span id="solutes-legend-name">Urea</span></span></div>
+        <div id="water-loading" class="canvas-loading" role="status" hidden>Cargando filtración del agua…</div>
+        <div id="water-pause-notice" class="simulation-pause-notice" role="status" hidden>Simulación en pausa</div>
+        <div id="water-legend" class="filtration-legend" hidden><span><i class="legend-blood"></i>Sangre</span><span><i class="legend-water"></i>Agua</span></div>
         <div id="filtration-loading" class="canvas-loading" role="status" hidden>Cargando glomérulo…</div>
         <div id="filtration-pause-notice" class="simulation-pause-notice" role="status" hidden>Simulación en pausa</div>
         <div id="filtration-legend" class="filtration-legend" hidden><span><i class="legend-blood"></i>Sangre</span><span><i class="legend-filtrate"></i>Filtrado</span><span><i class="legend-glucose"></i>Glucosa</span></div>
@@ -705,6 +758,74 @@
                   </div>
                 </div>
               </div>
+<div id="formula-cards-water" class="formula-carousel-group" data-formula-group="water" tabindex="0" role="region" aria-label="Fórmulas del agua" hidden>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">1. Presión neta de filtración</span></div>
+    <div class="formula-equation">PNF = P<sub>GC</sub> − P<sub>BS</sub> − π<sub>GC</sub></div>
+    <p class="water-formula-guide">π en Bowman ≈ 0. Se usan presiones capilares medias.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="water-result-pnf">10.0 mmHg</output></div>
+  </div>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">2. Volumen filtrado por minuto</span></div>
+    <div class="formula-equation">TFG = K<sub>f</sub> × max(0, PNF)</div>
+    <p class="water-formula-guide">La TFG mide el volumen de ultrafiltrado, compuesto por agua y solutos pequeños.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="water-result-tfg">125.0 mL/min</output></div>
+  </div>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">3. Flujo plasmático renal</span></div>
+    <div class="formula-equation">FPR = FSR × (1 − Hto / 100)</div>
+    <p class="water-formula-guide">FSR incluye células y plasma. Hto es el hematocrito expresado en porcentaje.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="water-result-plasma">625.0 mL/min</output></div>
+  </div>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">4. Fracción de filtración</span></div>
+    <div class="formula-equation">FF = (TFG / FPR) × 100</div>
+    <p class="water-formula-guide">Proporción del plasma que pasa al filtrado. El libro describe 15–20 % como referencia.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="water-result-fraction">20.0 %</output></div>
+  </div>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">5. Volumen filtrado diario</span></div>
+    <div class="formula-equation">V<sub>día</sub> = TFG × 1440 / 1000</div>
+    <p class="water-formula-guide">Proyección para una TFG constante durante 24 horas. La reabsorción posterior reduce el volumen urinario.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="water-result-daily">180.0 L/día</output></div>
+  </div></div>
+<div id="formula-cards-solutes" class="formula-carousel-group" data-formula-group="solutes" tabindex="0" role="region" aria-label="Fórmulas de solutos" hidden>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">1. Presión neta de filtración</span></div>
+    <div class="formula-equation">PNF = P<sub>GC</sub> − P<sub>BS</sub> − π<sub>GC</sub></div>
+    <p class="water-formula-guide">Se considera una presión oncótica en Bowman despreciable.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="solutes-result-pnf"></output></div>
+  </div>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">2. Volumen de filtrado</span></div>
+    <div class="formula-equation">TFG = K<sub>f</sub> × max(0, PNF)</div>
+    <p class="water-formula-guide">Las presiones medias y Kf determinan el volumen filtrado de ambos riñones.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="solutes-result-tfg"></output></div>
+  </div>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">3. Flujo plasmático renal</span></div>
+    <div class="formula-equation">FPR = FSR × (1 − Hto / 100)</div>
+    <p class="water-formula-guide">El hematocrito separa la fracción celular de la fracción plasmática de la sangre.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="solutes-result-plasma"></output></div>
+  </div>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">4. Concentración en el filtrado</span></div>
+    <div class="formula-equation">C<sub>filtrado</sub> = θ × P<sub>X</sub></div>
+    <p class="water-formula-guide">θ relaciona la concentración en el filtrado con la plasmática. En los ejemplos de solutos libres, θ empieza en 1.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="solutes-result-concentration"></output></div>
+  </div>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">5. Carga filtrada del soluto</span></div>
+    <div class="formula-equation" id="solutes-load-equation">CF = TFG × Cfiltrado / 100</div>
+    <p class="water-formula-guide">Se divide entre 100 para mg/dL y entre 1000 para mmol/L, porque la TFG está en mL/min.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="solutes-result-load"></output></div>
+  </div>
+  <div class="formula-card" role="group">
+    <div class="formula-card-header"><span class="formula-title">6. Fracción de la carga que se filtra</span></div>
+    <div class="formula-equation">Extracción = (TFG / FPR) × θ × 100</div>
+    <p class="water-formula-guide">Porcentaje de la carga plasmática que cruza al filtrado en su paso por el glomérulo.</p>
+    <div class="formula-result"><span>Resultado</span><output class="formula-result-value" id="solutes-result-extraction"></output></div>
+  </div></div>
 </section></div>
 
       <aside class="info-panel-right" id="info-panel">
@@ -731,6 +852,97 @@
               <h3>Estructuras</h3>
               <ul class="structure-list" id="structure-list"></ul>
             </div>
+          </div>
+
+          <div id="water-view" class="panel-view" style="display:none;">
+            <p class="water-intro">Ajusta los parámetros y observa el agua que pasa del plasma al filtrado.</p>
+            <p class="water-assumption">Se supone una barrera intacta, con presión oncótica en Bowman ≈ 0.</p>
+
+            <div class="water-parameter">
+              <label for="water-pgc">Presión hidrostática capilar · PGC</label>
+              <output id="water-value-pgc" for="water-pgc">60 mmHg</output>
+              <input id="water-pgc" type="range" min="20" max="80" step="1" value="60">
+            </div>
+            <div class="water-parameter">
+              <label for="water-pbs">Presión en Bowman · PBS</label>
+              <output id="water-value-pbs" for="water-pbs">18 mmHg</output>
+              <input id="water-pbs" type="range" min="0" max="40" step="1" value="18">
+            </div>
+            <div class="water-parameter">
+              <label for="water-pigc">Presión oncótica capilar · πGC</label>
+              <output id="water-value-pigc" for="water-pigc">32 mmHg</output>
+              <input id="water-pigc" type="range" min="0" max="50" step="1" value="32">
+            </div>
+            <div class="water-parameter">
+              <label for="water-kf">Coeficiente de filtración · Kf</label>
+              <output id="water-value-kf" for="water-kf">12.5 mL/min/mmHg</output>
+              <input id="water-kf" type="range" min="0" max="20" step="0.5" value="12.5">
+            </div>
+            <div class="water-parameter">
+              <label for="water-bloodFlow">Flujo sanguíneo renal · FSR</label>
+              <output id="water-value-bloodFlow" for="water-bloodFlow">1250 mL/min</output>
+              <input id="water-bloodFlow" type="range" min="400" max="1800" step="50" value="1250">
+            </div>
+            <div class="water-parameter">
+              <label for="water-hematocrit">Hematocrito · Hto</label>
+              <output id="water-value-hematocrit" for="water-hematocrit">50 %</output>
+              <input id="water-hematocrit" type="range" min="20" max="65" step="1" value="50">
+            </div><button id="water-defaults" class="water-reference" type="button">Restablecer parámetros</button>
+            <p id="water-zero-note" class="water-message" hidden>Si PNF ≤ 0, la TFG se muestra como cero. Esta vista representa la filtración hacia Bowman.</p>
+            <p id="water-invalid-note" class="water-message" role="status" hidden>La TFG supera el flujo plasmático disponible. Revisa los parámetros.</p>
+            <div class="section-divider"></div>
+            <h3>¿Hasta dónde llega esta vista?</h3>
+            <p class="water-assumption">El recorrido llega al inicio del túbulo proximal. La reabsorción y el efecto de la HAD ocurren después en la nefrona y determinan la orina final.</p>
+          </div>
+
+          <div id="solutes-view" class="panel-view" style="display:none;">
+            <p class="water-intro">Explora cómo la concentración plasmática y la filtrabilidad cambian la carga filtrada.</p>
+            <div class="water-parameter">
+              <label for="solutes-concentration">Concentración plasmática · PX</label>
+              <output id="solutes-value-concentration" for="solutes-concentration">30.0 mg/dL</output>
+              <input id="solutes-concentration" type="range" min="0" max="100" step="1" value="30">
+            </div>
+            <div class="water-parameter">
+              <label for="solutes-sieving">Filtrabilidad · θ</label>
+              <output id="solutes-value-sieving" for="solutes-sieving">100 %</output>
+              <input id="solutes-sieving" type="range" min="0" max="1" step="0.05" value="1" aria-describedby="solutes-sieving-help">
+              <p id="solutes-sieving-help" class="water-assumption">100 % permite igual concentración en plasma y filtrado. Un porcentaje menor representa paso restringido.</p>
+            </div>
+            <div class="water-parameter">
+              <label for="solutes-pgc">Presión hidrostática capilar · PGC</label>
+              <output id="solutes-value-pgc" for="solutes-pgc">60 mmHg</output>
+              <input id="solutes-pgc" type="range" min="20" max="80" step="1" value="60">
+            </div>
+            <div class="water-parameter">
+              <label for="solutes-pbs">Presión en Bowman · PBS</label>
+              <output id="solutes-value-pbs" for="solutes-pbs">18 mmHg</output>
+              <input id="solutes-pbs" type="range" min="0" max="40" step="1" value="18">
+            </div>
+            <div class="water-parameter">
+              <label for="solutes-pigc">Presión oncótica capilar · πGC</label>
+              <output id="solutes-value-pigc" for="solutes-pigc">32 mmHg</output>
+              <input id="solutes-pigc" type="range" min="0" max="50" step="1" value="32">
+            </div>
+            <div class="water-parameter">
+              <label for="solutes-kf">Coeficiente de filtración · Kf</label>
+              <output id="solutes-value-kf" for="solutes-kf">12.5 mL/min/mmHg</output>
+              <input id="solutes-kf" type="range" min="0" max="20" step="0.5" value="12.5">
+            </div>
+            <div class="water-parameter">
+              <label for="solutes-bloodFlow">Flujo sanguíneo renal · FSR</label>
+              <output id="solutes-value-bloodFlow" for="solutes-bloodFlow">1250 mL/min</output>
+              <input id="solutes-bloodFlow" type="range" min="400" max="1800" step="50" value="1250">
+            </div>
+            <div class="water-parameter">
+              <label for="solutes-hematocrit">Hematocrito · Hto</label>
+              <output id="solutes-value-hematocrit" for="solutes-hematocrit">50 %</output>
+              <input id="solutes-hematocrit" type="range" min="20" max="65" step="1" value="50">
+            </div><button id="solutes-defaults" class="water-reference" type="button">Restablecer parámetros</button>
+            <p id="solutes-invalid-note" class="water-message" role="status" hidden>La TFG supera el flujo plasmático disponible. Revisa los parámetros.</p>
+            <div class="section-divider"></div>
+            <h3>Balance de la carga</h3>
+            <p class="water-assumption">La carga que llega se calcula como FPR × PX, ajustando las unidades. Al restar la carga filtrada se obtiene la que continúa por la eferente.</p>
+            <p class="water-assumption">La presión oncótica en Bowman se considera despreciable. Las presiones, el flujo y la concentración se ajustan de forma independiente para explorar sus efectos.</p>
           </div>
 
           <div id="glucose-view" class="panel-view" style="display: none;">

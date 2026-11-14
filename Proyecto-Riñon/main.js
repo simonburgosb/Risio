@@ -6,6 +6,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GlucoseModule } from './glucose.js';
 import { FiltrationModule } from './filtration.js';
+import { WaterModule } from './water.js';
+import { SolutesModule } from './solutes.js';
 import { calculateRenalState } from './renal-physiology.js';
 import { AnatomyBrowser } from './anatomy-browser.js';
 import { forEachMaterial, loadKidneyAnatomy, loadDetailedAnatomyModel } from './anatomy-models.js';
@@ -57,6 +59,7 @@ let nephron85Anatomy = null;
 let anatomyKind = 'kidney';
 let anatomyBrowser = null;
 let currentActiveTab = '1';
+let selectedFiltration = '3';
 let isCutViewActive = false;
 
 const HIDDEN_OPACITY = 0.08;
@@ -64,6 +67,8 @@ const loader = new GLTFLoader();
 const frameClock = new THREE.Clock();
 const glucoseModule = new GlucoseModule(scene);
 const filtrationModule = new FiltrationModule(scene);
+const waterModule = new WaterModule(scene);
+const solutesModule = new SolutesModule(scene);
 const formulaCarousel = new FormulaCarousel();
 
 const kidneyLoading = loadKidneyAnatomy(loader)
@@ -99,7 +104,7 @@ async function loadDetailedAnatomy(kind) {
 }
 
 const anatomyStrokes = { kidney: [], glomerulus: [], nephron: [], nephron85: [] };
-const moduleStrokes = { '2': { kidney: [], nephron: [] }, '3': [] };
+const moduleStrokes = { '2': { kidney: [], nephron: [] }, '3': [], '4': [], '5': [] };
 function getAnatomyModel(kind = anatomyKind) {
   return { kidney: kidneyModel, glomerulus: glomerulusAnatomy, nephron: nephronAnatomy, nephron85: nephron85Anatomy }[kind];
 }
@@ -193,6 +198,44 @@ const widthInput = document.querySelector('#draw-width');
 const widthOutput = document.querySelector('#draw-width-value');
 const eraserButton = document.querySelector('#btn-eraser');
 const undoButton = document.querySelector('#btn-undo');
+let waterLoading = null;
+async function loadWater() {
+  if (waterLoading) return waterLoading;
+  const status = document.querySelector('#water-loading');
+  status.hidden = currentActiveTab !== '4';
+  waterLoading = waterModule.load(loader).then(model => {
+    status.hidden = true;
+    if (currentActiveTab === '4') focusCameraOn(model);
+    return model;
+  }).catch(error => {
+    console.error('Error al cargar el agua:', error);
+    status.textContent = 'No se pudo cargar el glomérulo. Vuelve a abrir Agua para reintentar.';
+    status.hidden = currentActiveTab !== '4';
+    waterLoading = null;
+    throw error;
+  });
+  return waterLoading;
+}
+
+let solutesLoading = null;
+async function loadSolutes() {
+  if (solutesLoading) return solutesLoading;
+  const status = document.querySelector('#solutes-loading');
+  status.hidden = currentActiveTab !== '5';
+  solutesLoading = solutesModule.load(loader).then(model => {
+    status.hidden = true;
+    if (currentActiveTab === '5') focusCameraOn(model);
+    return model;
+  }).catch(error => {
+    console.error('Error al cargar los solutos:', error);
+    status.textContent = 'No se pudo cargar el glomérulo. Vuelve a abrir Solutos para reintentar.';
+    status.hidden = currentActiveTab !== '5';
+    solutesLoading = null;
+    throw error;
+  });
+  return solutesLoading;
+}
+
 const clearButton = document.querySelector('#btn-clear');
 
 let drawingMode = false;
@@ -206,6 +249,8 @@ function loadAccountAnnotations() {
   for (const [kind, layer] of Object.entries(anatomyStrokes)) layer.splice(0, layer.length, ...notes.read(`viewer:anatomy:${kind}`));
   for (const [kind, layer] of Object.entries(moduleStrokes['2'])) layer.splice(0, layer.length, ...notes.read(`viewer:glucose:${kind}`));
   moduleStrokes['3'].splice(0, moduleStrokes['3'].length, ...notes.read('viewer:filtration'));
+  moduleStrokes['4'].splice(0, moduleStrokes['4'].length, ...notes.read('viewer:water'));
+  moduleStrokes['5'].splice(0, moduleStrokes['5'].length, ...notes.read('viewer:solutes'));
   strokes = getAnnotationLayer(); redrawAnnotations();
 }
 function saveAccountAnnotations() {
@@ -216,7 +261,7 @@ notes.subscribe(loadAccountAnnotations);
 loadAccountAnnotations();
 
 function annotationResource(tab = currentActiveTab, kind = anatomyKind) {
-  return tab === '1' ? `viewer:anatomy:${kind}` : tab === '2' ? `viewer:glucose:${glucoseModule.view}` : 'viewer:filtration';
+  return tab === '1' ? `viewer:anatomy:${kind}` : tab === '2' ? `viewer:glucose:${glucoseModule.view}` : tab === '4' ? 'viewer:water' : tab === '5' ? 'viewer:solutes' : 'viewer:filtration';
 }
 function getAnnotationLayer(tab = currentActiveTab, kind = anatomyKind) {
   return tab === '1' ? anatomyStrokes[kind] : tab === '2' ? moduleStrokes['2'][glucoseModule.view] : moduleStrokes[tab];
@@ -393,7 +438,7 @@ let isolatedMaterial = null;
 let isolatedModel = null;
 
 function getActiveModel() {
-  return currentActiveTab === '1' ? getAnatomyModel() : currentActiveTab === '2' ? glucoseModule.anatomy : filtrationModule.anatomy;
+  return currentActiveTab === '1' ? getAnatomyModel() : currentActiveTab === '2' ? glucoseModule.anatomy : currentActiveTab === '4' ? waterModule.anatomy : currentActiveTab === '5' ? solutesModule.anatomy : filtrationModule.anatomy;
 }
 
 function isVisibleInHierarchy(object) {
@@ -670,6 +715,10 @@ function initFormulas() {
       anatomyView.style.display = id === '1' ? 'block' : 'none';
       glucoseView.style.display = id === '2' ? 'block' : 'none';
       formulasView.style.display = id === '3' ? 'block' : 'none';
+      $('#water-view').style.display = id === '4' ? 'block' : 'none';
+      $('#solutes-view').style.display = id === '5' ? 'block' : 'none';
+      if (id === '5') { formulaCarousel.setGroup('solutes'); structureTitle.textContent = 'Parámetros del soluto'; }
+      if (id === '4') { formulaCarousel.setGroup('water'); structureTitle.textContent = 'Parámetros del agua'; }
       if (id === '3') setFormulaSubtab(selectedFormula);
       else if (id === '2') structureTitle.textContent = 'Recorrido de la glucosa';
     },
@@ -685,18 +734,25 @@ const tabBtns = document.querySelectorAll('.tab-btn[data-tab]');
 
 function updateModuleLayout(id) {
   const glucose = id === '2', filtration = id === '3';
+  const filtrationView = ['3', '4', '5'].includes(id);
   document.body.classList.toggle('glucose-screen-active', glucose);
-  document.body.classList.toggle('filtration-screen-active', filtration);
+  document.body.classList.toggle('filtration-screen-active', filtrationView);
+  document.body.classList.toggle('water-screen-active', id === '4');
+  document.body.classList.toggle('solutes-screen-active', id === '5');
+  document.querySelector('#solutes-controls-panel').hidden = id !== '5';
+  document.querySelector('#water-controls-panel').hidden = id !== '4';
   document.querySelector('#filtration-controls-panel').hidden = !filtration;
-  formulaCarousel.setActive(filtration);
+  formulaCarousel.setActive(filtrationView);
+  document.querySelector('#filtration-substances').hidden = !(filtrationView);
   document.querySelector('#glucose-controls-panel').hidden = !glucose;
-  document.querySelector('#glucose-note-tool').hidden = !(glucose || filtration);
+  document.querySelector('#glucose-note-tool').hidden = !(glucose || filtrationView);
 }
 
 function switchModule(id) {
   restoreIsolation();
   setDrawingMode(false);
   currentActiveTab = id;
+  if (['3', '4', '5'].includes(id)) selectedFiltration = id;
   updateModuleLayout(id);
   strokes = getAnnotationLayer();
   redrawAnnotations();
@@ -709,11 +765,20 @@ function switchModule(id) {
   }
   glucoseModule.setActive(id === '2');
   filtrationModule.setActive(id === '3');
+  waterModule.setActive(id === '4');
+  solutesModule.setActive(id === '5');
+  document.querySelector('#solutes-loading').hidden = id !== '5' || !!solutesModule.simulation;
+  document.querySelector('#water-loading').hidden = id !== '4' || !!waterModule.simulation;
   document.querySelector('#filtration-loading').hidden = id !== '3' || !!filtrationModule.simulation;
   document.querySelector('#glucose-loading').hidden = id !== '2' || glucoseModule.ready;
   infoPanel.classList.remove('hidden');
   document.querySelector('#btn-panel').setAttribute('aria-expanded', 'true');
-  tabBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === id));
+  tabBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === (['4', '5'].includes(id) ? '3' : id)));
+  document.querySelectorAll('[data-filtration-substance]').forEach(button => {
+    const selected = button.dataset.filtrationSubstance === id;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
   formulasManager.switchFormulaModule(id);
   anatomyBrowser.setActive(id === '1');
 
@@ -733,9 +798,21 @@ function switchModule(id) {
     if (filtrationModule.simulation) focusCameraOn(filtrationModule.root);
     else loadFiltration().catch(() => {});
   }
+  if (id === '4') {
+    if (waterModule.simulation) focusCameraOn(waterModule.root);
+    else loadWater().catch(() => {});
+  }
+  if (id === '5') {
+    if (solutesModule.simulation) focusCameraOn(solutesModule.root);
+    else loadSolutes().catch(() => {});
+  }
 }
 
-tabBtns.forEach((btn) => btn.addEventListener('click', () => switchModule(btn.dataset.tab)));
+tabBtns.forEach((btn) => btn.addEventListener('click', () =>
+  switchModule(btn.dataset.tab === '3' ? selectedFiltration : btn.dataset.tab)));
+document.querySelectorAll('[data-filtration-substance]').forEach(button => {
+  button.addEventListener('click', () => switchModule(button.dataset.filtrationSubstance));
+});
 
 document.addEventListener('glucose-view-change', () => {
   if (currentActiveTab !== '2') return;
@@ -755,6 +832,10 @@ function showHome() {
   redrawAnnotations();
   glucoseModule.setActive(false);
   filtrationModule.setActive(false);
+  waterModule.setActive(false);
+  solutesModule.setActive(false);
+  document.querySelector('#solutes-loading').hidden = true;
+  document.querySelector('#water-loading').hidden = true;
   if (kidneyModel) kidneyModel.visible = true;
   if (glomerulusAnatomy) glomerulusAnatomy.visible = false;
   if (nephronAnatomy) nephronAnatomy.visible = false;
@@ -805,7 +886,7 @@ document.querySelector('#btn-credits-home').addEventListener('click', () => {
 document.querySelectorAll('[data-home-tab]').forEach((button) => {
   button.addEventListener('click', () => {
     document.body.classList.remove('home-screen-open', 'credits-screen-open');
-    switchModule(button.dataset.homeTab);
+    switchModule(button.dataset.homeTab === '3' ? selectedFiltration : button.dataset.homeTab);
     const formulaTab = button.dataset.formulaTab;
     if (formulaTab) formulasManager.setFormulaSubtab(formulaTab);
   });
@@ -859,6 +940,8 @@ function animate() {
   controls.update();
   glucoseModule.update(dt);
   filtrationModule.update(dt);
+  waterModule.update(dt);
+  solutesModule.update(dt);
   renderer.render(scene, camera);
   anatomyBrowser.update();
 }
@@ -870,7 +953,7 @@ loadDetailedAnatomy('nephron');
 loadDetailedAnatomy('nephron85');
 
 // Read-only handles used to inspect integration without changing the simulation.
-window.atlasRenal = { glucoseModule, filtrationModule, scene, camera, controls,
+window.atlasRenal = { glucoseModule, filtrationModule, waterModule, solutesModule, scene, camera, controls,
   get activeTab() { return currentActiveTab; },
   get anatomyKind() { return anatomyKind; },
   get anatomyModel() { return getActiveModel(); } };
