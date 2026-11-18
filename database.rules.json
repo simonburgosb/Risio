@@ -406,6 +406,68 @@
           }
         }
       }
+    },
+    "laboratoryProgress": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid && auth.token.email_verified === true && root.child('profiles').child($uid).child('university').val() === 'UPB'",
+        "$lab": {
+          ".write": "auth != null && auth.uid === $uid && auth.token.email_verified === true && root.child('profiles').child($uid).child('university').val() === 'UPB' && newData.exists()",
+          ".validate": "$lab.matches(/^(bowman|kf|solute)-v1$/) && newData.hasChildren(['stage','prediction','experimentValue','explanationChoice','reflection']) && (newData.child('stage').val() === 1 || newData.child('prediction').val() !== '') && (newData.child('stage').val() < 3 || (($lab === 'bowman-v1' && newData.child('experimentValue').val() === 24) || ($lab === 'kf-v1' && newData.child('experimentValue').val() === 6) || ($lab === 'solute-v1' && newData.child('experimentValue').val() === 60))) && (newData.child('stage').val() < 4 || (newData.child('explanationChoice').val() !== '' && newData.child('reflection').val().length >= 30)) && newData.hasChild('updatedAt')",
+          "stage": {
+            ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 4"
+          },
+          "prediction": {
+            ".validate": "newData.val() === '' || newData.val() === 'decrease' || newData.val() === 'same' || newData.val() === 'increase'"
+          },
+          "experimentValue": {
+            ".validate": "newData.isNumber() && (newData.val() === -1 || ($lab === 'bowman-v1' && newData.val() === 24) || ($lab === 'kf-v1' && newData.val() === 6) || ($lab === 'solute-v1' && newData.val() === 60))"
+          },
+          "explanationChoice": {
+            ".validate": "newData.val() === '' || ($lab === 'bowman-v1' && (newData.val() === 'opposes' || newData.val() === 'promotes' || newData.val() === 'reabsorbs')) || ($lab === 'kf-v1' && (newData.val() === 'pressure' || newData.val() === 'capacity' || newData.val() === 'urine')) || ($lab === 'solute-v1' && (newData.val() === 'volume' || newData.val() === 'load' || newData.val() === 'excretion'))"
+          },
+          "reflection": {
+            ".validate": "newData.isString() && newData.val().length <= 2000"
+          },
+          "$other": {
+            ".validate": false
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          }
+        }
+      }
+    },
+    "laboratoryAttempts": {
+      "$uid": {
+        "$lab": {
+          ".read": "auth != null && auth.uid === $uid && auth.token.email_verified === true && root.child('profiles').child($uid).child('university').val() === 'UPB' && $lab.matches(/^(bowman|kf|solute)-v1$/) && query.limitToLast != null && query.limitToLast <= 10",
+          "$attempt": {
+            ".write": "auth != null && auth.uid === $uid && auth.token.email_verified === true && root.child('profiles').child($uid).child('university').val() === 'UPB' && newData.exists() && (!data.exists() || (newData.child('stage').val() === data.child('stage').val() && newData.child('prediction').val() === data.child('prediction').val() && newData.child('experimentValue').val() === data.child('experimentValue').val() && newData.child('explanationChoice').val() === data.child('explanationChoice').val() && newData.child('reflection').val() === data.child('reflection').val()))",
+            ".validate": "$lab.matches(/^(bowman|kf|solute)-v1$/) && $attempt.matches(/^[-A-Za-z0-9_]{20}$/) && newData.hasChildren(['stage','prediction','experimentValue','explanationChoice','reflection']) && (newData.child('stage').val() === 1 || newData.child('prediction').val() !== '') && (newData.child('stage').val() < 3 || (($lab === 'bowman-v1' && newData.child('experimentValue').val() === 24) || ($lab === 'kf-v1' && newData.child('experimentValue').val() === 6) || ($lab === 'solute-v1' && newData.child('experimentValue').val() === 60))) && (newData.child('stage').val() < 4 || (newData.child('explanationChoice').val() !== '' && newData.child('reflection').val().length >= 30)) && newData.child('stage').val() === 4 && newData.hasChild('submittedAt')",
+            "stage": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 4"
+            },
+            "prediction": {
+              ".validate": "newData.val() === '' || newData.val() === 'decrease' || newData.val() === 'same' || newData.val() === 'increase'"
+            },
+            "experimentValue": {
+              ".validate": "newData.isNumber() && (newData.val() === -1 || ($lab === 'bowman-v1' && newData.val() === 24) || ($lab === 'kf-v1' && newData.val() === 6) || ($lab === 'solute-v1' && newData.val() === 60))"
+            },
+            "explanationChoice": {
+              ".validate": "newData.val() === '' || ($lab === 'bowman-v1' && (newData.val() === 'opposes' || newData.val() === 'promotes' || newData.val() === 'reabsorbs')) || ($lab === 'kf-v1' && (newData.val() === 'pressure' || newData.val() === 'capacity' || newData.val() === 'urine')) || ($lab === 'solute-v1' && (newData.val() === 'volume' || newData.val() === 'load' || newData.val() === 'excretion'))"
+            },
+            "reflection": {
+              ".validate": "newData.isString() && newData.val().length <= 2000"
+            },
+            "$other": {
+              ".validate": false
+            },
+            "submittedAt": {
+              ".validate": "newData.isNumber() && newData.val() <= now"
+            }
+          }
+        }
+      }
     }
   }
 }

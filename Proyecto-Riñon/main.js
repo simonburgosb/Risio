@@ -952,6 +952,13 @@ loadDetailedAnatomy('glomerulus');
 loadDetailedAnatomy('nephron');
 loadDetailedAnatomy('nephron85');
 
+// Los laboratorios usan el mismo visor y los mismos cálculos de filtración.
+document.addEventListener('risio-lab-open-simulation', event => {
+  if (!['4', '5'].includes(event.detail?.module)) return;
+  document.body.classList.remove('home-screen-open', 'library-screen-open', 'credits-screen-open');
+  switchModule(event.detail.module);
+});
+
 // Read-only handles used to inspect integration without changing the simulation.
 window.atlasRenal = { glucoseModule, filtrationModule, waterModule, solutesModule, scene, camera, controls,
   get activeTab() { return currentActiveTab; },

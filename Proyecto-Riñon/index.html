@@ -8,6 +8,7 @@
   <title>Risio · Explorador renal interactivo</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./assessments.css">
+  <link rel="stylesheet" href="./laboratories.css">
   <link rel="stylesheet" href="./auth.css">
   <link rel="stylesheet" href="./boards.css">
   <link rel="stylesheet" href="./board-book-pages.css">
@@ -122,7 +123,7 @@
         <div class="home-secondary-options" aria-label="Más recursos">
           <button class="home-option home-resource" id="btn-library" type="button">
             <span class="home-option-icon" data-icon="book" aria-hidden="true"></span>
-            <span class="home-option-copy"><strong>Biblioteca / Evaluaciones</strong><small>Documentos, videos y talleres</small></span>
+            <span class="home-option-copy"><strong>Biblioteca / Evaluaciones</strong><small>Documentos, videos, talleres y laboratorios</small></span>
           </button>
           <button class="home-option home-resource" id="btn-boards" type="button" aria-controls="boards-page">
             <span class="home-option-icon" data-icon="board" aria-hidden="true"></span>
@@ -237,9 +238,10 @@
           <p class="home-eyebrow">Recursos de aprendizaje</p>
           <h1 id="library-title">Biblioteca / Evaluaciones</h1>
           <p class="library-description">Consulta materiales y pon a prueba lo aprendido en fisiología renal.</p>
-          <nav class="nav-tabs library-area-tabs" aria-label="Biblioteca y evaluaciones" role="tablist">
+          <nav class="nav-tabs library-area-tabs" aria-label="Recursos de aprendizaje" role="tablist">
             <button class="tab-btn active" id="library-area-materials" data-library-area="materials" type="button" role="tab" aria-selected="true" aria-controls="library-materials">Biblioteca</button>
             <button class="tab-btn" id="library-area-assessments" data-library-area="assessments" type="button" role="tab" aria-selected="false" aria-controls="library-assessments" tabindex="-1">Evaluaciones</button>
+            <button class="tab-btn" id="library-area-labs" data-library-area="labs" type="button" role="tab" aria-selected="false" aria-controls="library-labs" tabindex="-1">Laboratorios</button>
           </nav>
           <div id="library-materials" role="tabpanel" aria-labelledby="library-area-materials">
           <nav class="library-modules" aria-label="Módulos de Biblioteca" role="tablist">
@@ -452,6 +454,29 @@
               </section>
             </div>
           </section>
+          <section id="library-labs" role="tabpanel" aria-labelledby="library-area-labs" hidden>
+            <div id="lab-catalog">
+              <header class="lab-hero"><div><p class="lab-eyebrow">APRENDER EXPERIMENTANDO</p><h2 class="library-section-title" tabindex="-1" id="lab-catalog-title">Predice, experimenta y explica</h2><p>Una pregunta. Un cambio en el glomérulo. Una explicación basada en lo que observas.</p></div><div class="lab-hero-mark" aria-hidden="true">P → E → E</div></header>
+              <div class="lab-method"><span><b>01</b> Registra tu predicción</span><span><b>02</b> Prueba en el modelo 3D</span><span><b>03</b> Explica con evidencia</span></div>
+              <div id="lab-cards" class="lab-cards"></div>
+              <p class="lab-note">Práctica formativa con un modelo simplificado. Los valores representan ambos riñones; la filtración glomerular no equivale a la orina final.</p>
+            </div>
+            <article id="lab-detail" hidden>
+              <button id="lab-back" class="assessment-button secondary" type="button">← Todos los laboratorios</button>
+              <p id="lab-topic" class="lab-eyebrow"></p><h2 id="lab-title" class="library-section-title" tabindex="-1"></h2><p id="lab-objective"></p>
+              <ol id="lab-steps" class="lab-steps" aria-label="Avance del laboratorio"><li>1 · Predice</li><li>2 · Experimenta</li><li>3 · Explica</li></ol>
+              <p id="lab-status" class="assessment-status" role="status" aria-live="polite"></p>
+              <button id="lab-retry" class="assessment-button secondary" type="button" hidden>Reintentar carga</button>
+              <form id="lab-form" hidden>
+                <section id="lab-predict" class="lab-sheet"><p class="lab-eyebrow">PASO 1 DE 3</p><h3 id="lab-question"></h3><p>Antes de tocar los controles, registra lo que esperas que ocurra.</p><fieldset id="lab-predictions"><legend>Tu predicción</legend></fieldset><button id="lab-commit" class="assessment-button" type="button">Guardar predicción y experimentar →</button></section>
+                <section id="lab-experiment" class="lab-sheet" hidden><p class="lab-eyebrow">PASO 2 DE 3</p><h3>Cambia una variable y observa</h3><p id="lab-instruction"></p><p id="lab-prediction-summary" class="lab-callout"></p><div class="lab-table-wrap"><table class="lab-comparison"><caption>Registro de la experiencia</caption><thead><tr><th>Medición</th><th>Inicio</th><th>Experimento</th></tr></thead><tbody id="lab-measurements"></tbody></table></div><div class="lab-actions"><button id="lab-simulate" class="assessment-button" type="button">Abrir simulación 3D</button><button id="lab-explain-next" class="assessment-button secondary" type="button" hidden>Continuar a la explicación →</button></div><p class="lab-note">En la simulación, ajusta el slider indicado y pulsa «Registrar medición». Puedes pausar y girar el glomérulo.</p></section>
+                <section id="lab-explain" class="lab-sheet" hidden><p class="lab-eyebrow">PASO 3 DE 3</p><h3>De la observación a la explicación</h3><p id="lab-evidence" class="lab-callout"></p><fieldset id="lab-causes"><legend>¿Cuál explica el resultado?</legend></fieldset><label class="lab-reflection-label" for="lab-reflection" id="lab-reflection-label"></label><textarea id="lab-reflection" rows="5" minlength="30" maxlength="2000" aria-describedby="lab-reflection-help" placeholder="Relaciona lo que cambiaste, lo que observaste y la fórmula…"></textarea><p id="lab-reflection-help" class="lab-note">Entre 30 y 2000 caracteres. Tu reflexión queda guardada como texto; no recibe una calificación automática.</p><div class="lab-actions"><button id="lab-submit" class="assessment-button" type="submit">Entregar y ver retroalimentación</button><button id="lab-draft" class="assessment-button secondary" type="button">Guardar borrador</button><button id="lab-observe-again" class="assessment-button secondary" type="button">Volver a observar</button></div></section>
+              </form>
+              <section id="lab-result" class="lab-sheet" aria-labelledby="lab-result-title" hidden><p class="lab-eyebrow">EXPERIENCIA COMPLETADA</p><h3 id="lab-result-title" tabindex="-1">Lo que descubriste</h3><div class="lab-score"><strong id="lab-score"></strong><p>Respuestas comprobables<br><small>Predicción + explicación elegida</small></p></div><div id="lab-review"></div><p id="lab-equation" class="lab-equation"></p><p id="lab-feedback"></p><h4>Tu reflexión</h4><p id="lab-saved-reflection" class="lab-saved-reflection"></p><details class="lab-transfer"><summary id="lab-transfer-question"></summary><p id="lab-transfer-answer"></p></details><div class="lab-actions"><button id="lab-repeat" class="assessment-button" type="button">Realizar un nuevo intento</button><button id="lab-download" class="assessment-button secondary" type="button">Descargar mi registro</button></div></section>
+              <section id="lab-history-section" class="lab-history" hidden><h3>Tus últimos intentos</h3><p class="lab-note">Se muestran hasta 10 intentos. Cada entrega conserva su predicción, medición y reflexión.</p><div id="lab-history"></div></section>
+              <p id="lab-source" class="lab-note"></p>
+            </article>
+          </section>
         </div>
       </section>
 
@@ -593,6 +618,7 @@
           <button class="tab-btn active" type="button" data-filtration-substance="3" aria-pressed="true">Glucosa</button>
           <button class="tab-btn" type="button" data-filtration-substance="4" aria-pressed="false">Agua</button>
           <button class="tab-btn" type="button" data-filtration-substance="5" aria-pressed="false">Solutos</button>
+          <button class="tab-btn" id="btn-filtration-labs" type="button">Laboratorio guiado</button>
         </nav>
         <div id="model-stage" class="model-stage"><canvas id="webgl-canvas"></canvas>
         <p id="anatomy-model-caption" class="anatomy-model-caption" aria-live="polite" hidden>Riñón</p>

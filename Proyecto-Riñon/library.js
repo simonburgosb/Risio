@@ -5,6 +5,7 @@ import {AnnotationLayer} from './library-annotations.js';
 import {PdfReader} from './library-pdf.js';
 import {renalBook} from './renal-assessments.js';
 import './assessments.js';
+import './laboratories.js';
 
 const $ = selector => document.querySelector(selector);
 const dialog = $('#library-reader');
