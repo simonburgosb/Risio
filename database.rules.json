@@ -20,13 +20,13 @@
           ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 12"
         },
         "subjects": {
-          ".validate": "newData.hasChildren()",
+          
           "$sub": {
             ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 80"
           }
         },
         "createdAt": {
-          ".validate": "newData.isNumber() && newData.val() <= now && (!data.exists() || newData.val() === data.val())"
+          ".validate": "newData.isNumber() && newData.val() <= now"
         },
         "updatedAt": {
           ".validate": "newData.isNumber() && newData.val() <= now"
