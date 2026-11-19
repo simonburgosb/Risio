@@ -38,18 +38,59 @@ function screen(name, text = '') {
   showMessage(text);
   gate.querySelector(`[data-auth-view="${name}"] h1`)?.focus({preventScroll: true});
 }
+const UPB_MEDICINE_PILOT = {
+  1: [
+    'Bioética I',
+    'Biología Celular',
+    'Bioquímica I',
+    'Historia de la Medicina',
+    'Humanismo, Cultura y Valores',
+    'Psicobiología',
+    'Salud Pública I'
+  ],
+  2: [
+    'Anatomía Médica',
+    'Bioquímica II',
+    'Cristología',
+    'Histoembriología',
+    'Lengua y Cultura'
+  ],
+  3: [
+    'Biología Molecular',
+    'Farmacología I',
+    'Fisiología',
+    'Formación Humanista I',
+    'Semiología Básica'
+  ],
+  4: [
+    'Farmacología II',
+    'Formación Humanista II',
+    'Microbiología y Parasitología',
+    'Patología',
+    'Semiología Clínica'
+  ]
+};
+
 function profileFields(form) {
   const data = new FormData(form), role = data.get('role'), university = data.get('university');
   const displayName = String(data.get('displayName') || '').trim();
   if (displayName.length < 2 || displayName.length > 80) throw new Error('Escribe tu nombre, entre 2 y 80 caracteres.');
   if (university !== 'UPB' || !['student', 'teacher'].includes(role)) throw new Error('Selecciona UPB y tu perfil.');
-  const semester = role === 'student' ? Number(data.get('semester')) : null;
-  if (role === 'student' && (!Number.isInteger(semester) || semester < 1 || semester > 12)) throw new Error('Selecciona el semestre que estás cursando.');
-  return {displayName, university, requestedRole: role, ...(semester ? {semester} : {})};
+  const semester = Number(data.get('semester'));
+  if (!Number.isInteger(semester) || semester < 1 || semester > 12) {
+    throw new Error(role === 'teacher' ? 'Selecciona el semestre principal de docencia.' : 'Selecciona el semestre que estás cursando.');
+  }
+  const subjects = Array.from(form.querySelectorAll('input[name="subject"]:checked')).map(cb => cb.value.trim()).filter(Boolean);
+  if (!subjects.length) {
+    throw new Error(role === 'teacher' ? 'Selecciona al menos una materia que estás dictando.' : 'Selecciona al menos una materia que estás cursando.');
+  }
+  return {displayName, university, requestedRole: role, semester, subjects};
 }
 function validProfile(profile) {
   return profile?.university === 'UPB' && typeof profile.displayName === 'string' && profile.displayName.trim().length >= 2 &&
-    ['student', 'teacher'].includes(profile.requestedRole) && (profile.requestedRole === 'teacher' || (Number.isInteger(profile.semester) && profile.semester >= 1 && profile.semester <= 12));
+    ['student', 'teacher'].includes(profile.requestedRole) &&
+    Number.isInteger(profile.semester) && profile.semester >= 1 && profile.semester <= 12 &&
+    Array.isArray(profile.subjects) && profile.subjects.length > 0;
 }
 async function saveProfile(form) {
   const profile = profileFields(form);
@@ -66,7 +107,14 @@ async function openApplication(profile) {
   try {
     currentProfile = profile;
     $('#account-name').textContent = profile.displayName;
-    $('#account-details').textContent = profile.requestedRole === 'student' ? `UPB · Estudiante · Semestre ${profile.semester}` : 'UPB · Profesor';
+    const roleText = profile.requestedRole === 'teacher' ? 'Profesor' : 'Estudiante';
+    $('#account-details').textContent = `UPB · ${roleText} · Semestre ${profile.semester}`;
+    const accountSubjects = $('#account-subjects');
+    if (accountSubjects) {
+      accountSubjects.textContent = Array.isArray(profile.subjects) && profile.subjects.length > 0
+        ? `Materias (${profile.requestedRole === 'teacher' ? 'Docencia' : 'Cursando'}): ${profile.subjects.join(', ')}`
+        : '';
+    }
     $('#account-email').textContent = auth.currentUser.email;
     $('#account-professor-notice').hidden = profile.requestedRole !== 'teacher';
     await notes.start(auth.currentUser.uid);
@@ -109,17 +157,89 @@ function formHandler(id, action) {
   form.addEventListener('submit', event => { event.preventDefault(); perform(form.querySelector('[type=submit]'), () => action(form)); });
 }
 for (const button of document.querySelectorAll('[data-auth-go]')) button.addEventListener('click', () => screen(button.dataset.authGo));
+function renderSubjectsForForm(form) {
+  const semester = Number(form.elements.semester.value);
+  const subjectsField = form.querySelector('[data-subjects-field]');
+  const listContainer = form.querySelector('[data-subjects-list]');
+  const extraContainer = form.querySelector('[data-subjects-extra]');
+  const toggleBtn = form.querySelector('[data-subjects-toggle]');
+  if (!subjectsField || !listContainer) return;
+
+  if (!semester || !UPB_MEDICINE_PILOT[semester]) {
+    subjectsField.hidden = true;
+    listContainer.innerHTML = '';
+    if (extraContainer) { extraContainer.hidden = true; extraContainer.innerHTML = ''; }
+    if (toggleBtn) toggleBtn.hidden = true;
+    return;
+  }
+
+  const previouslyChecked = new Set(
+    Array.from(form.querySelectorAll('input[name="subject"]:checked')).map(cb => cb.value)
+  );
+
+  subjectsField.hidden = false;
+  const currentSemesterSubjects = UPB_MEDICINE_PILOT[semester];
+  listContainer.innerHTML = currentSemesterSubjects.map(sub => `
+    <label class="auth-subject-item">
+      <input type="checkbox" name="subject" value="${sub}" ${previouslyChecked.has(sub) ? 'checked' : ''}>
+      <span>${sub}</span>
+    </label>
+  `).join('');
+
+  if (extraContainer && toggleBtn) {
+    toggleBtn.hidden = false;
+    toggleBtn.textContent = 'Ver materias de otros semestres (1 a 4)';
+    extraContainer.hidden = true;
+
+    const otherSemesters = [1, 2, 3, 4].filter(s => s !== semester);
+    extraContainer.innerHTML = otherSemesters.map(s => `
+      <div class="auth-semester-heading">Semestre ${s}</div>
+      ${UPB_MEDICINE_PILOT[s].map(sub => `
+        <label class="auth-subject-item">
+          <input type="checkbox" name="subject" value="${sub}" ${previouslyChecked.has(sub) ? 'checked' : ''}>
+          <span>${sub}</span>
+          <span class="auth-subject-semester-badge">Sem. ${s}</span>
+        </label>
+      `).join('')}
+    `).join('');
+  }
+}
+
 for (const form of document.querySelectorAll('[data-profile-form]')) {
   const university = form.elements.university, role = form.elements.role, semester = form.elements.semester;
+  const semesterLabel = form.querySelector('[data-semester-label]');
+  const subjectsTitle = form.querySelector('[data-subjects-title]');
+  const toggleBtn = form.querySelector('[data-subjects-toggle]');
+  const extraContainer = form.querySelector('[data-subjects-extra]');
+
+  if (toggleBtn && extraContainer) {
+    toggleBtn.addEventListener('click', () => {
+      extraContainer.hidden = !extraContainer.hidden;
+      toggleBtn.textContent = extraContainer.hidden ? 'Ver materias de otros semestres (1 a 4)' : 'Ocultar materias de otros semestres';
+    });
+  }
+
   const update = () => {
     role.disabled = university.value !== 'UPB';
     if (role.disabled) role.value = '';
-    const student = role.value === 'student' && !role.disabled;
-    semester.disabled = !student; semester.required = student;
-    form.querySelector('[data-semester-field]').hidden = !student;
-    if (!student) semester.value = '';
+    const active = ['student', 'teacher'].includes(role.value) && !role.disabled;
+    semester.disabled = !active; semester.required = active;
+    form.querySelector('[data-semester-field]').hidden = !active;
+
+    if (semesterLabel) {
+      semesterLabel.textContent = role.value === 'teacher' ? 'Semestre principal' : 'Semestre que cursas';
+    }
+    if (subjectsTitle) {
+      subjectsTitle.textContent = role.value === 'teacher' ? 'Materias que estás dictando' : 'Materias que estás cursando';
+    }
+
+    if (!active) semester.value = '';
+    renderSubjectsForForm(form);
   };
-  university.addEventListener('change', update); role.addEventListener('change', update); update();
+  university.addEventListener('change', update);
+  role.addEventListener('change', update);
+  semester.addEventListener('change', () => renderSubjectsForForm(form));
+  update();
 }
 formHandler('#login-form', async form => {
   const result = await signInWithEmailAndPassword(auth, form.elements.email.value.trim(), form.elements.password.value);

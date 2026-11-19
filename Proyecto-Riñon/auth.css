@@ -53,6 +53,18 @@ body.auth-locked #app { display: none; }
 .account-dialog p { margin: 12px 0; font-size: .83rem; color:var(--text-73665e); line-height: 1.6; overflow-wrap: anywhere; }
 .account-dialog .auth-primary { margin-top: 18px; }
 #account-professor-notice { padding: 12px; background:var(--bg-eee5dd); border-radius: 7px; font-size: .75rem; }
+.auth-subjects-field { display: grid; gap: 8px; margin-top: 4px; }
+.auth-subjects-header { display: flex; justify-content: space-between; align-items: baseline; }
+.auth-subjects-title { font-size: .8rem; font-weight: 600; color: var(--text-65564d); }
+.auth-subjects-hint { font-size: .72rem; color: var(--text-83776f); }
+.auth-subjects-list, .auth-subjects-extra { display: grid; gap: 6px; max-height: 190px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-dfd4cb); border-radius: 8px; background: var(--bg-ffffff); }
+.auth-subject-item { display: flex !important; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: .82rem !important; font-weight: 500 !important; color: var(--text-463a35) !important; transition: background .12s ease; }
+.auth-subject-item:hover { background: var(--bg-eee5dd); }
+.auth-subject-item input[type="checkbox"] { width: 17px !important; height: 17px !important; min-height: 17px !important; margin: 0 !important; padding: 0 !important; accent-color: var(--text-8c2626); cursor: pointer; }
+.auth-subject-semester-badge { margin-left: auto; font-size: .68rem; color: var(--text-83776f); background: var(--bg-eee8e2); padding: 2px 6px; border-radius: 4px; }
+.auth-subjects-toggle { background: none; border: none; color: var(--text-8c2626); font-size: .75rem; cursor: pointer; text-align: left; padding: 4px 0; text-decoration: underline; }
+.auth-semester-heading { font-size: .75rem; font-weight: 700; color: var(--text-8c2626); margin: 6px 0 2px; padding-bottom: 2px; border-bottom: 1px solid var(--border-dfd4cb); }
+.account-subjects { font-size: .8rem; color: var(--text-73665e); margin: 6px 0 !important; line-height: 1.5; word-break: break-word; }
 :is(.auth-form input, .auth-form select, .auth-content button, .account-button, .account-dialog button):focus-visible { outline:2px solid var(--border-8c2626); outline-offset: 3px; }
 @media (max-width: 850px) {
   .auth-gate { grid-template-columns: minmax(0, 1fr); }

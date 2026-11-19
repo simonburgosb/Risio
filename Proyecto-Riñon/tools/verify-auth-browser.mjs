@@ -43,9 +43,10 @@ try {
   await form.locator('[name=displayName]').fill('Estudiante de prueba');
   await form.locator('[name=university]').selectOption('UPB');
   await form.locator('[name=role]').selectOption('teacher');
-  assert.equal(await form.locator('[data-semester-field]').isVisible(), false);
+  assert.equal(await form.locator('[data-semester-field]').isVisible(), true);
   await form.locator('[name=role]').selectOption('student');
   await form.locator('[name=semester]').selectOption('3');
+  await form.locator('input[name=subject][value="Fisiología"]').check();
   const email = `student-${Date.now()}@example.test`, password = 'RisioTest123!';
   await form.locator('[name=email]').fill(email);
   await form.locator('[name=password]').fill(password); await form.locator('[name=passwordConfirm]').fill(password);

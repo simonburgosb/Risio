@@ -46,7 +46,13 @@
         <form id="register-form" class="auth-form" data-profile-form><label>Nombre completo<input name="displayName" autocomplete="name" minlength="2" maxlength="80" required placeholder="Tu nombre y apellido"></label>
       <label>Universidad<select name="university" required><option value="">Selecciona tu universidad</option><option value="UPB">Universidad Pontificia Bolivariana · UPB</option><option disabled>Más universidades próximamente</option></select></label>
       <div class="auth-row"><label>Perfil<select name="role" required disabled><option value="">Selecciona tu perfil</option><option value="student">Estudiante</option><option value="teacher">Profesor</option></select></label>
-      <label data-semester-field hidden>Semestre<select name="semester" disabled><option value="">Selecciona</option><option value="1">Semestre 1</option><option value="2">Semestre 2</option><option value="3">Semestre 3</option><option value="4">Semestre 4</option><option value="5">Semestre 5</option><option value="6">Semestre 6</option><option value="7">Semestre 7</option><option value="8">Semestre 8</option><option value="9">Semestre 9</option><option value="10">Semestre 10</option><option value="11">Semestre 11</option><option value="12">Semestre 12</option></select></label></div>
+      <label data-semester-field hidden><span data-semester-label>Semestre</span><select name="semester" disabled><option value="">Selecciona</option><option value="1">Semestre 1 (Medicina)</option><option value="2">Semestre 2 (Medicina)</option><option value="3">Semestre 3 (Medicina)</option><option value="4">Semestre 4 (Medicina)</option></select></label></div>
+      <div class="auth-subjects-field" data-subjects-field hidden>
+        <div class="auth-subjects-header"><span class="auth-subjects-title" data-subjects-title>Materias</span><span class="auth-subjects-hint">Puedes escoger varias</span></div>
+        <div class="auth-subjects-list" data-subjects-list></div>
+        <button type="button" class="auth-subjects-toggle" data-subjects-toggle hidden>Ver materias de otros semestres (1 a 4)</button>
+        <div class="auth-subjects-extra" data-subjects-extra hidden></div>
+      </div>
           <label>Correo electrónico<input name="email" type="email" autocomplete="username" maxlength="254" required placeholder="nombre@ejemplo.com"><small>Recibirás un enlace para verificar que el correo te pertenece.</small></label>
           <label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><small>Al menos 8 caracteres.</small></label>
           <label>Confirmar contraseña<input name="passwordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
@@ -63,7 +69,13 @@
       <section data-auth-view="profile" hidden><p class="home-eyebrow">Tu correo está verificado</p><h1 tabindex="-1">Completa tu perfil</h1><p>Solo falta tu información académica para continuar.</p><form id="profile-form" class="auth-form" data-profile-form><label>Nombre completo<input name="displayName" autocomplete="name" minlength="2" maxlength="80" required placeholder="Tu nombre y apellido"></label>
       <label>Universidad<select name="university" required><option value="">Selecciona tu universidad</option><option value="UPB">Universidad Pontificia Bolivariana · UPB</option><option disabled>Más universidades próximamente</option></select></label>
       <div class="auth-row"><label>Perfil<select name="role" required disabled><option value="">Selecciona tu perfil</option><option value="student">Estudiante</option><option value="teacher">Profesor</option></select></label>
-      <label data-semester-field hidden>Semestre<select name="semester" disabled><option value="">Selecciona</option><option value="1">Semestre 1</option><option value="2">Semestre 2</option><option value="3">Semestre 3</option><option value="4">Semestre 4</option><option value="5">Semestre 5</option><option value="6">Semestre 6</option><option value="7">Semestre 7</option><option value="8">Semestre 8</option><option value="9">Semestre 9</option><option value="10">Semestre 10</option><option value="11">Semestre 11</option><option value="12">Semestre 12</option></select></label></div><button class="auth-primary" type="submit">Guardar y entrar</button></form><button class="auth-link" type="button" data-auth-signout>Usar otra cuenta</button></section>
+      <label data-semester-field hidden><span data-semester-label>Semestre</span><select name="semester" disabled><option value="">Selecciona</option><option value="1">Semestre 1 (Medicina)</option><option value="2">Semestre 2 (Medicina)</option><option value="3">Semestre 3 (Medicina)</option><option value="4">Semestre 4 (Medicina)</option></select></label></div>
+      <div class="auth-subjects-field" data-subjects-field hidden>
+        <div class="auth-subjects-header"><span class="auth-subjects-title" data-subjects-title>Materias</span><span class="auth-subjects-hint">Puedes escoger varias</span></div>
+        <div class="auth-subjects-list" data-subjects-list></div>
+        <button type="button" class="auth-subjects-toggle" data-subjects-toggle hidden>Ver materias de otros semestres (1 a 4)</button>
+        <div class="auth-subjects-extra" data-subjects-extra hidden></div>
+      </div><button class="auth-primary" type="submit">Guardar y entrar</button></form><button class="auth-link" type="button" data-auth-signout>Usar otra cuenta</button></section>
       <section data-auth-view="connection" hidden><p class="home-eyebrow">Estamos contigo</p><h1 tabindex="-1">No pudimos abrir tu espacio</h1><p>Revisa la conexión y vuelve a intentarlo. Si es la primera instalación, comprueba la configuración de Firebase con la guía incluida.</p><button id="auth-retry" class="auth-primary" type="button">Volver a intentar</button><button class="auth-link" type="button" data-auth-signout>Usar otra cuenta</button></section>
       <div id="auth-message" class="auth-message" role="status" aria-live="polite" hidden></div>
       <noscript>Activa JavaScript para iniciar sesión y explorar Risio.</noscript>
@@ -1133,6 +1145,7 @@
   <div id="capture-status" class="capture-status" role="status" aria-live="polite" data-html2canvas-ignore hidden></div>
   <dialog id="account-dialog" class="account-dialog" aria-labelledby="account-name">
     <h2 id="account-name"></h2><p id="account-email"></p><p id="account-details"></p>
+    <p id="account-subjects" class="account-subjects"></p>
     <p id="account-professor-notice" hidden>Puedes crear tableros de clase directamente y dar permiso para anotar. Las anotaciones personales de otras cuentas siguen siendo privadas.</p>
     <p>Tus anotaciones son privadas y se guardan en tu cuenta.</p><p id="account-dialog-message" role="status" aria-live="polite"></p>
     <button id="account-logout" class="auth-primary" type="button">Cerrar sesión</button><button id="account-close" class="auth-secondary" type="button">Volver a Risio</button>

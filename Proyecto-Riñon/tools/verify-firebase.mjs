@@ -44,6 +44,10 @@ try {
   await assertFails(guest.database().ref('assessmentAttempts/alice/morfologia-v1').get());
   await assertFails(alice.database().ref('teacherApprovals/alice').set(true));
   await assertSucceeds(bob.database().ref('profiles/bob').set({...profile, requestedRole:'teacher', semester:null}));
+  await assertSucceeds(bob.database().ref('profiles/bob').set({...profile, requestedRole:'teacher', semester: 3, subjects: ['Fisiología', 'Anatomía Médica']}));
+  await assertFails(bob.database().ref('profiles/bob/subjects/0').set('a'));
+  await assertFails(bob.database().ref('profiles/bob/subjects/0').set(123));
+  await assertSucceeds(alice.database().ref('profiles/alice/subjects').set(['Fisiología', 'Farmacología I']));
   await assertFails(bob.database().ref('teacherApprovals/bob').set(true));
   await assertSucceeds(alice.storage().ref('private/alice/test').putString('Hello', 'raw', {contentType: 'text/plain'}));
   await assertFails(bob.storage().ref('private/alice/test').getMetadata());
