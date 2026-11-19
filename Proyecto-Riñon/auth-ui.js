@@ -97,6 +97,46 @@ async function saveProfile(form) {
   await withTimeout(set(ref(database, `profiles/${auth.currentUser.uid}`), {...profile, createdAt: serverTimestamp(), updatedAt: serverTimestamp()}));
   return profile;
 }
+function getInitials(name = '') {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return 'U';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+function renderProfileCard(profile) {
+  if (!profile) return;
+  const initials = getInitials(profile.displayName);
+  const avatar = $('#account-avatar');
+  if (avatar) avatar.textContent = initials;
+  $('#account-name').textContent = profile.displayName || '';
+  $('#account-email').textContent = auth.currentUser?.email || '';
+
+  const roleBadge = $('#account-role-badge');
+  if (roleBadge) {
+    roleBadge.textContent = profile.requestedRole === 'teacher' ? 'Profesor' : 'Estudiante';
+    roleBadge.dataset.role = profile.requestedRole || 'student';
+  }
+
+  const semesterVal = $('#account-semester-val');
+  if (semesterVal) {
+    semesterVal.textContent = profile.semester ? `Semestre ${profile.semester} (Medicina)` : 'No especificado';
+  }
+
+  const subjectsLabel = $('#account-subjects-label');
+  if (subjectsLabel) {
+    subjectsLabel.textContent = profile.requestedRole === 'teacher' ? 'Materias que dicta:' : 'Materias que cursa:';
+  }
+
+  const tagsContainer = $('#account-subjects-tags');
+  if (tagsContainer) {
+    const subs = Array.isArray(profile.subjects) && profile.subjects.length > 0 ? profile.subjects : ['Ninguna seleccionada'];
+    tagsContainer.innerHTML = subs.map(s => `<span class="account-subject-tag">${s}</span>`).join('');
+  }
+
+  const roleText = profile.requestedRole === 'teacher' ? 'Profesor' : 'Estudiante';
+  $('#account-details').textContent = `UPB · ${roleText} · Semestre ${profile.semester}`;
+  $('#account-professor-notice').hidden = profile.requestedRole !== 'teacher';
+}
 function verifiedScreen(text = '') {
   $('#verify-email').textContent = auth.currentUser?.email || '';
   screen('verify', text);
@@ -106,7 +146,7 @@ async function openApplication(profile) {
   opening = true;
   try {
     currentProfile = profile;
-    $('#account-name').textContent = profile.displayName;
+    renderProfileCard(profile); hydrateIcons($('#account-dialog'));
     const roleText = profile.requestedRole === 'teacher' ? 'Profesor' : 'Estudiante';
     $('#account-details').textContent = `UPB · ${roleText} · Semestre ${profile.semester}`;
     const accountSubjects = $('#account-subjects');
@@ -158,14 +198,15 @@ function formHandler(id, action) {
 }
 for (const button of document.querySelectorAll('[data-auth-go]')) button.addEventListener('click', () => screen(button.dataset.authGo));
 function renderSubjectsForForm(form) {
-  const semester = Number(form.elements.semester.value);
+  const semester = Number(form.elements.semester.value) || 1;
   const subjectsField = form.querySelector('[data-subjects-field]');
   const listContainer = form.querySelector('[data-subjects-list]');
   const extraContainer = form.querySelector('[data-subjects-extra]');
   const toggleBtn = form.querySelector('[data-subjects-toggle]');
   if (!subjectsField || !listContainer) return;
 
-  if (!semester || !UPB_MEDICINE_PILOT[semester]) {
+  const active = ['student', 'teacher'].includes(form.elements.role.value) && !form.elements.role.disabled;
+  if (!active || !UPB_MEDICINE_PILOT[semester]) {
     subjectsField.hidden = true;
     listContainer.innerHTML = '';
     if (extraContainer) { extraContainer.hidden = true; extraContainer.innerHTML = ''; }
@@ -234,11 +275,15 @@ for (const form of document.querySelectorAll('[data-profile-form]')) {
     }
 
     if (!active) semester.value = '';
+    else if (!semester.value) semester.value = '1';
     renderSubjectsForForm(form);
   };
   university.addEventListener('change', update);
+  university.addEventListener('input', update);
   role.addEventListener('change', update);
+  role.addEventListener('input', update);
   semester.addEventListener('change', () => renderSubjectsForForm(form));
+  semester.addEventListener('input', () => renderSubjectsForForm(form));
   update();
 }
 formHandler('#login-form', async form => {
@@ -288,8 +333,124 @@ for (const button of document.querySelectorAll('[data-auth-signout]')) button.ad
 $('#auth-retry').addEventListener('click', event => perform(event.currentTarget, async () => {
   actionBusy = false; await routeUser(auth.currentUser); actionBusy = true;
 }));
+function renderEditSubjects(semester, checkedSubjects = []) {
+  const listContainer = $('#account-edit-subjects-list');
+  const extraContainer = $('#account-edit-subjects-extra');
+  const toggleBtn = $('#account-edit-subjects-toggle');
+  if (!listContainer) return;
+
+  const previouslyChecked = new Set(
+    checkedSubjects.length ? checkedSubjects :
+    Array.from($('#account-edit-mode').querySelectorAll('input[name="edit-subject"]:checked')).map(cb => cb.value)
+  );
+
+  const semNum = Number(semester) || 1;
+  const currentSemesterSubjects = UPB_MEDICINE_PILOT[semNum] || [];
+  listContainer.innerHTML = currentSemesterSubjects.map(sub => `
+    <label class="auth-subject-item">
+      <input type="checkbox" name="edit-subject" value="${sub}" ${previouslyChecked.has(sub) ? 'checked' : ''}>
+      <span>${sub}</span>
+    </label>
+  `).join('');
+
+  if (extraContainer && toggleBtn) {
+    toggleBtn.hidden = false;
+    toggleBtn.textContent = extraContainer.hidden ? 'Ver materias de otros semestres (1 a 4)' : 'Ocultar materias de otros semestres';
+
+    const otherSemesters = [1, 2, 3, 4].filter(s => s !== semNum);
+    extraContainer.innerHTML = otherSemesters.map(s => `
+      <div class="auth-semester-heading">Semestre ${s}</div>
+      ${UPB_MEDICINE_PILOT[s].map(sub => `
+        <label class="auth-subject-item">
+          <input type="checkbox" name="edit-subject" value="${sub}" ${previouslyChecked.has(sub) ? 'checked' : ''}>
+          <span>${sub}</span>
+          <span class="auth-subject-semester-badge">Sem. ${s}</span>
+        </label>
+      `).join('')}
+    `).join('');
+  }
+}
+
 const accountDialog = $('#account-dialog');
-$('#btn-account').addEventListener('click', () => { $('#account-dialog-message').textContent = ''; accountDialog.showModal(); });
+$('#btn-account').addEventListener('click', () => {
+  renderProfileCard(currentProfile);
+  hydrateIcons($('#account-dialog'));
+  $('#account-view-mode').hidden = false;
+  $('#account-edit-mode').hidden = true;
+  const msg = $('#account-dialog-message');
+  msg.textContent = '';
+  msg.hidden = true;
+  accountDialog.showModal();
+});
+
+$('#account-edit-btn')?.addEventListener('click', () => {
+  $('#account-view-mode').hidden = true;
+  $('#account-edit-mode').hidden = false;
+  const msg = $('#account-dialog-message');
+  msg.textContent = '';
+  msg.hidden = true;
+  const sem = currentProfile?.semester || 1;
+  $('#account-edit-semester').value = String(sem);
+  $('#account-edit-subjects-title').textContent = currentProfile?.requestedRole === 'teacher' ? 'Materias que estás dictando' : 'Materias que estás cursando';
+  $('#account-edit-subjects-extra').hidden = true;
+  renderEditSubjects(sem, currentProfile?.subjects || []);
+});
+
+$('#account-edit-subjects-toggle')?.addEventListener('click', () => {
+  const extra = $('#account-edit-subjects-extra');
+  extra.hidden = !extra.hidden;
+  $('#account-edit-subjects-toggle').textContent = extra.hidden ? 'Ver materias de otros semestres (1 a 4)' : 'Ocultar materias de otros semestres';
+});
+
+$('#account-edit-semester')?.addEventListener('change', () => {
+  renderEditSubjects($('#account-edit-semester').value);
+});
+
+$('#account-cancel-btn')?.addEventListener('click', () => {
+  $('#account-view-mode').hidden = false;
+  $('#account-edit-mode').hidden = true;
+  const msg = $('#account-dialog-message');
+  msg.textContent = '';
+  msg.hidden = true;
+});
+
+$('#account-save-btn')?.addEventListener('click', () => perform($('#account-save-btn'), async () => {
+  const newSemester = Number($('#account-edit-semester').value);
+  const newSubjects = Array.from($('#account-edit-mode').querySelectorAll('input[name="edit-subject"]:checked'))
+    .map(cb => cb.value.trim())
+    .filter(Boolean);
+
+  if (!Number.isInteger(newSemester) || newSemester < 1 || newSemester > 12) {
+    throw new Error('Selecciona un semestre válido.');
+  }
+  if (!newSubjects.length) {
+    throw new Error(currentProfile?.requestedRole === 'teacher' ? 'Selecciona al menos una materia que estás dictando.' : 'Selecciona al menos una materia que estás cursando.');
+  }
+
+  const updatedData = {
+    ...currentProfile,
+    semester: newSemester,
+    subjects: newSubjects,
+    updatedAt: serverTimestamp()
+  };
+
+  await withTimeout(set(ref(database, `profiles/${auth.currentUser.uid}`), updatedData));
+  currentProfile = {
+    ...currentProfile,
+    semester: newSemester,
+    subjects: newSubjects,
+    updatedAt: Date.now()
+  };
+
+  renderProfileCard(currentProfile);
+  hydrateIcons($('#account-dialog'));
+  $('#account-view-mode').hidden = false;
+  $('#account-edit-mode').hidden = true;
+  const msg = $('#account-dialog-message');
+  msg.textContent = '¡Información académica actualizada correctamente!';
+  msg.dataset.error = 'false';
+  msg.hidden = false;
+}));
 $('#account-close').addEventListener('click', () => accountDialog.close());
 $('#account-logout').addEventListener('click', async event => {
   event.currentTarget.disabled = true;

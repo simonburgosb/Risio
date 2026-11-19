@@ -28,7 +28,7 @@ const server=http.createServer((req,res)=>{
   if(filename!==root&&!filename.startsWith(root+path.sep)){res.writeHead(403);res.end();return;}
   if(fs.existsSync(filename)&&fs.statSync(filename).isDirectory())filename=path.join(filename,'index.html');
   fs.stat(filename,(err,stat)=>{if(err||!stat.isFile()){res.writeHead(404);res.end('Archivo no encontrado');return;}
-    res.writeHead(200,{'Content-Type':types[path.extname(filename)]||'application/octet-stream','Cache-Control':'no-cache'});fs.createReadStream(filename).pipe(res);});
+    res.writeHead(200,{'Content-Type':types[path.extname(filename)]||'application/octet-stream','Cache-Control':'no-store, no-cache, must-revalidate, max-age=0','Pragma':'no-cache'});fs.createReadStream(filename).pipe(res);});
 });
 server.listen(port,'127.0.0.1',()=>console.log(`Atlas renal listo: http://localhost:${port}\nCtrl+C para detener. Acceso y sincronización con Firebase.`));
 server.on('error',e=>{console.error(e.code==='EADDRINUSE'?`El puerto ${port} está ocupado. En Git Bash usa: PORT=8081 npm start`:e.message);process.exitCode=1;});

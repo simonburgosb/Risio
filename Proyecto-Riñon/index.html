@@ -1144,12 +1144,74 @@
   </div>
   <div id="capture-status" class="capture-status" role="status" aria-live="polite" data-html2canvas-ignore hidden></div>
   <dialog id="account-dialog" class="account-dialog" aria-labelledby="account-name">
-    <h2 id="account-name"></h2><p id="account-email"></p><p id="account-details"></p>
-    <p id="account-subjects" class="account-subjects"></p>
+    <div class="account-profile-header">
+      <div id="account-avatar" class="account-avatar" aria-hidden="true">U</div>
+      <h2 id="account-name" class="account-name"></h2>
+      <p id="account-email" class="account-email"></p>
+      <div class="account-university-badge">UPB · Universidad Pontificia Bolivariana</div>
+      <p id="account-details" hidden></p>
+      <p id="account-subjects" hidden></p>
+    </div>
+
+    <!-- MODO VISTA (Por defecto) -->
+    <div id="account-view-mode" class="account-view-mode">
+      <div class="account-card">
+        <div class="account-card-header">
+          <span class="account-card-title">Información académica</span>
+          <button id="account-edit-btn" class="account-edit-btn" type="button" title="Editar semestre y materias">
+            <span data-icon="pencil" aria-hidden="true"></span>
+            <span>Editar</span>
+          </button>
+        </div>
+        <div class="account-info-row">
+          <span class="account-info-label">Rol:</span>
+          <span id="account-role-badge" class="account-role-badge"></span>
+        </div>
+        <div class="account-info-row">
+          <span class="account-info-label">Semestre:</span>
+          <span id="account-semester-val" class="account-info-val"></span>
+        </div>
+        <div class="account-info-col">
+          <span id="account-subjects-label" class="account-info-label">Materias:</span>
+          <div id="account-subjects-tags" class="account-subjects-tags"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODO EDICIÓN (Al presionar el lápiz) -->
+    <div id="account-edit-mode" class="account-edit-mode" hidden>
+      <div class="account-card">
+        <div class="account-card-header">
+          <span class="account-card-title">Editar información académica</span>
+        </div>
+        <label class="account-edit-label">Semestre
+          <select id="account-edit-semester" class="account-edit-select">
+            <option value="1">Semestre 1 (Medicina)</option>
+            <option value="2">Semestre 2 (Medicina)</option>
+            <option value="3">Semestre 3 (Medicina)</option>
+            <option value="4">Semestre 4 (Medicina)</option>
+          </select>
+        </label>
+        <div class="auth-subjects-field">
+          <div class="auth-subjects-header">
+            <span id="account-edit-subjects-title" class="auth-subjects-title">Materias</span>
+            <span class="auth-subjects-hint">Puedes escoger varias</span>
+          </div>
+          <div id="account-edit-subjects-list" class="auth-subjects-list"></div>
+          <button type="button" id="account-edit-subjects-toggle" class="auth-subjects-toggle">Ver materias de otros semestres (1 a 4)</button>
+          <div id="account-edit-subjects-extra" class="auth-subjects-extra" hidden></div>
+        </div>
+        <div class="account-edit-actions">
+          <button id="account-save-btn" class="auth-primary" type="button">Guardar cambios</button>
+          <button id="account-cancel-btn" class="auth-secondary" type="button">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
     <p id="account-professor-notice" hidden>Puedes crear tableros de clase directamente y dar permiso para anotar. Las anotaciones personales de otras cuentas siguen siendo privadas.</p>
     <p>Tus anotaciones son privadas y se guardan en tu cuenta.</p><p id="account-dialog-message" role="status" aria-live="polite"></p>
     <button id="account-logout" class="auth-primary" type="button">Cerrar sesión</button><button id="account-close" class="auth-secondary" type="button">Volver a Risio</button>
   </dialog>
-  <script type="module" src="auth-ui.js"></script>
+  <script type="module" src="auth-ui.js?v=4.2.0"></script>
 </body>
 </html>
